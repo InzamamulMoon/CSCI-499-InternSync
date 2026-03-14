@@ -44,3 +44,39 @@ def fetch_and_parse_readme(url, season_name):
         return {}
     
     print(f"Total content length: {len(content)}")
+
+    # Find all category sections
+    category_pattern = r'##\s*[^\n]*Internship Roles'
+    category_headers = re.finditer(category_pattern, content)
+    
+    all_categories = {}
+    
+    for match in category_headers:
+        header = match.group()
+        print(f"\nFound category header: {header}")
+        
+        # Extract category name (remove emoji and "## ")
+        category_name = re.sub(r'##\s*[^\w\s]*\s*', '', header)
+        category_name = category_name.replace(' Internship Roles', '').strip()
+        print(f"Category name: {category_name}")
+        
+        start_pos = match.end()
+        
+        # Find the next header or end marker
+        next_header = re.search(r'##\s|🔒|\*\*\[See', content[start_pos:])
+        if next_header:
+            end_pos = start_pos + next_header.start()
+        else:
+            end_pos = len(content)
+        
+        section = content[start_pos:end_pos]
+        
+        soup = BeautifulSoup(section, 'html.parser')
+        
+        tbody = soup.find('tbody')
+        if not tbody:
+            print(f"No table found in {category_name}")
+            continue
+        
+        rows = tbody.find_all('tr')
+        print(f"Found {len(rows)} rows in {category_name}")

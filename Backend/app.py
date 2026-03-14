@@ -80,3 +80,31 @@ def fetch_and_parse_readme(url, season_name):
         
         rows = tbody.find_all('tr')
         print(f"Found {len(rows)} rows in {category_name}")
+
+         # Get all rows
+        rows = tbody.find_all('tr')
+        print(f"Found {len(rows)} rows in {category_name}")
+        
+        # Format the data
+        internships = []
+        for row in rows:
+
+            cells = row.find_all('td')
+            
+            cell_data = [cell.get_text(strip=True) for cell in cells]
+            
+            # Handle both 5-column (summer) and 6-column (off-season) formats
+            if len(cell_data) == 5:
+                company = cell_data[0]
+                role = cell_data[1]
+                location = cell_data[2]
+                application_cell = cell_data[3]
+                age = cell_data[4]
+                terms = "Summer 2026" 
+           
+            else:
+                continue
+            
+            # Handle the arrow case (↳)
+            if company == "↳" and len(internships) > 0:
+                company = internships[-1]['company']

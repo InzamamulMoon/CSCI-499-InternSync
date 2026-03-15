@@ -93,14 +93,12 @@ def fetch_and_parse_readme(url, season_name):
             
             cell_data = [cell.get_text(strip=True) for cell in cells]
             
-            # Handle both 5-column (summer) and 6-column (off-season) formats
+            # Handle the 5 columns
             if len(cell_data) == 5:
                 company = cell_data[0]
                 role = cell_data[1]
                 location = cell_data[2]
-                application_cell = cell_data[3]
                 age = cell_data[4]
-                terms = "Summer 2026" 
            
             else:
                 continue
@@ -108,3 +106,34 @@ def fetch_and_parse_readme(url, season_name):
             # Handle the arrow case (↳)
             if company == "↳" and len(internships) > 0:
                 company = internships[-1]['company']
+
+
+                    # Clean up company name - remove extra spaces
+            company = re.sub(r'\s+', ' ', company).strip()
+            
+            # Extract application links from the application cell
+            # Find all <a> tags in the application cell
+            app_cell = cells[3]  # Get the actual cell element
+            links = []
+            for link in app_cell.find_all('a', href=True):
+                href = link['href']
+                # Filter out image links
+                if not any(x in href for x in ['.png', '.jpg', '.gif', 'imgur.com', 'cloudinary']):
+                    links.append(href)
+            
+            internships.append({
+                'company': company,
+                'role': role,
+                'location': location,
+                'application_links': links,
+                'age': age
+            })
+        
+        if len(internships) > 0:
+            all_categories[category_name] = internships
+    
+    print(f"Total categories found: {len(all_categories)}")
+    total_internships = sum(len(v) for v in all_categories.values())
+    print(f"Total internships: {total_internships}")
+    
+    return all_categories

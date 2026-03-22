@@ -137,3 +137,28 @@ def fetch_and_parse_readme(url, season_name):
     print(f"Total internships: {total_internships}")
     
     return all_categories
+
+
+@app.route('/')
+def hello():
+    summer_data = fetch_and_parse_readme(summer_url, "Summer")
+    
+    
+    result = {
+        'summer_2026': summer_data,   
+    }
+    
+    total = 0
+    for v in summer_data.values():  
+     total += len(v)  
+    
+    print(f"Summer internships: {total}")
+    
+    if total == 0:
+        return jsonify({"error": "No internships found"}), 500
+    
+    result['summary'] = {
+        'total_count': total
+    }
+    
+    return jsonify(result)

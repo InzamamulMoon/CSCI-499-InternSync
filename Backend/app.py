@@ -147,7 +147,7 @@ def hello():
     result = {
         'summer_2026': summer_data,   
     }
-    
+
     total = 0
     for v in summer_data.values():  
      total += len(v)  
@@ -162,3 +162,6 @@ def hello():
     }
     
     return jsonify(result)
+
+if __name__ == '__main__':
+    app.run(debug=True)

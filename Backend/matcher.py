@@ -24,3 +24,16 @@ def score_internships(user_profile, internships):
         score = round((matched / total) * 100, 1)
         scored.append({**internship, "score": score})
     return sorted(scored, key=lambda x: x["score"], reverse=True)
+
+def get_sample_data():
+    user_profile = {
+        "languages": ["Python", "Java", "SQL"],
+        "courses": ["Data Structures", "Algorithms", "Database Systems", "Machine Learning"],
+        "interests": ["machine learning", "web development", "data science"]
+    }
+    internships = [
+        {"company": "Google", "role": "Software Engineering Intern", "location": "New York"},
+        {"company": "Netflix", "role": "Machine Learning Intern", "location": "Remote"},
+        {"company": "JPMorgan", "role": "Data Science Intern", "location": "New York"}
+    ]
+    return user_profile, internships

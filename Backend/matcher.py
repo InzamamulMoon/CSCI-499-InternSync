@@ -14,3 +14,13 @@ def match_keywords(user_keywords, internship):
     internship_text = internship["role"] + " " + internship["company"]
     internship_keywords = normalize_text(internship_text)
     return sum(1 for word in user_keywords if word in internship_keywords)
+
+def score_internships(user_profile, internships):
+    user_keywords = extract_keywords(user_profile)
+    total = len(user_keywords) if user_keywords else 1
+    scored = []
+    for internship in internships:
+        matched = match_keywords(user_keywords, internship)
+        score = round((matched / total) * 100, 1)
+        scored.append({**internship, "score": score})
+    return sorted(scored, key=lambda x: x["score"], reverse=True)

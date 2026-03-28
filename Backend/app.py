@@ -1,9 +1,10 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import logging
 import base64
 import requests
 import re
 from bs4 import BeautifulSoup
+from matcher import score_internships, get_sample_data
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -135,5 +136,14 @@ def fetch_and_parse_readme(url, season_name):
     print(f"Total categories found: {len(all_categories)}")
     total_internships = sum(len(v) for v in all_categories.values())
     print(f"Total internships: {total_internships}")
-    
+
     return all_categories
+
+
+@app.route("/match", methods=["POST"])
+def match():
+    data = request.get_json()
+    user_profile = data["user_profile"]
+    _, sample_internships = get_sample_data()
+    results = score_internships(user_profile, sample_internships)
+    return jsonify(results)

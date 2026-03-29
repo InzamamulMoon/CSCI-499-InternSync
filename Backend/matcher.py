@@ -54,6 +54,18 @@ def explain_match(user_profile, internship):
     return result
 
 
+def skill_gap(user_profile, internship):
+    internship_keywords = normalize_text(internship["role"] + " " + internship["company"])
+    user_keywords = normalize_text(" ".join(
+        user_profile.get("languages", []) +
+        user_profile.get("courses", []) +
+        user_profile.get("interests", [])
+    ))
+    missing = [kw for kw in internship_keywords if kw not in user_keywords]
+    gap_score = round((len(missing) / len(internship_keywords)) * 100, 1) if internship_keywords else 0.0
+    return {"missing_skills": missing, "gap_score": gap_score}
+
+
 def get_sample_data():
     user_profile = {
         "languages": ["Python", "Java", "SQL"],

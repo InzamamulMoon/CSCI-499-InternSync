@@ -1,8 +1,9 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import logging
 import requests
 import re
 from bs4 import BeautifulSoup
+from matcher import score_internships, get_sample_data, weighted_score, filter_by_score, top_matches, location_boost, explain_match, skill_gap
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -185,3 +186,44 @@ def offseason_only():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+    return all_categories
+
+
+@app.route("/match", methods=["POST"])
+def match():
+    data = request.get_json()
+    user_profile = data["user_profile"]
+    preferred_location = data.get("preferred_location", None)
+    min_score = data.get("min_score", 0.0)
+    top_n = data.get("top_n", 10)
+    _, sample_internships = get_sample_data()
+    results = score_internships(user_profile, sample_internships)
+    if preferred_location:
+        results = location_boost(results, preferred_location)
+    results = filter_by_score(results, min_score)
+    results = top_matches(results, top_n)
+    for internship in results:
+        internship["explanation"] = explain_match(user_profile, internship)
+        internship["skill_gap"] = skill_gap(user_profile, internship)
+    return jsonify(results)
+
+
+@app.route("/skill-gap", methods=["POST"])
+def skill_gap_endpoint():
+    data = request.get_json()
+    user_profile = data["user_profile"]
+    internship = data["internship"]
+    return jsonify(skill_gap(user_profile, internship))
+
+
+@app.route("/score-breakdown", methods=["POST"])
+def score_breakdown():
+    data = request.get_json()
+    user_profile = data["user_profile"]
+    internship = data["internship"]
+    return jsonify({
+        "explanation": explain_match(user_profile, internship),
+        "weighted_score": weighted_score(user_profile, internship),
+        "internship": internship
+    })

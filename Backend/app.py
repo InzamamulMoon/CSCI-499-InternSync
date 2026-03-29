@@ -165,3 +165,15 @@ def skill_gap_endpoint():
     user_profile = data["user_profile"]
     internship = data["internship"]
     return jsonify(skill_gap(user_profile, internship))
+
+
+@app.route("/score-breakdown", methods=["POST"])
+def score_breakdown():
+    data = request.get_json()
+    user_profile = data["user_profile"]
+    internship = data["internship"]
+    return jsonify({
+        "explanation": explain_match(user_profile, internship),
+        "weighted_score": weighted_score(user_profile, internship),
+        "internship": internship
+    })

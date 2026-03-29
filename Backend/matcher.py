@@ -41,6 +41,19 @@ def weighted_score(user_profile, internship):
     return round((earned_weight / total_weight) * 100, 1)
 
 
+def explain_match(user_profile, internship):
+    internship_keywords = normalize_text(internship["role"] + " " + internship["company"])
+    categories = {"languages": "matched_languages", "courses": "matched_courses", "interests": "matched_interests"}
+    result = {}
+    all_matched = []
+    for category, key in categories.items():
+        matched = [v for v in user_profile.get(category, []) if any(w in internship_keywords for w in normalize_text(v))]
+        result[key] = matched
+        all_matched.extend(matched)
+    result["suggestion"] = "You match this role because of your experience in: " + ", ".join(all_matched)
+    return result
+
+
 def get_sample_data():
     user_profile = {
         "languages": ["Python", "Java", "SQL"],

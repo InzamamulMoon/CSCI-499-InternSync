@@ -91,6 +91,16 @@ def top_matches(scored_internships, n=10):
     return sorted(scored_internships, key=lambda x: x["score"], reverse=True)[:n]
 
 
+def location_boost(scored_internships, preferred_location):
+    boosted = []
+    for internship in scored_internships:
+        updated = dict(internship)
+        if preferred_location.lower() in updated.get("location", "").lower():
+            updated["score"] = min(100.0, updated["score"] + 10)
+        boosted.append(updated)
+    return sorted(boosted, key=lambda x: x["score"], reverse=True)
+
+
 def get_sample_data():
     user_profile = {
         "languages": ["Python", "Java", "SQL"],

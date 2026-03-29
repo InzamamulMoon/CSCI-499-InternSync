@@ -25,6 +25,22 @@ def score_internships(user_profile, internships):
         scored.append({**internship, "score": score})
     return sorted(scored, key=lambda x: x["score"], reverse=True)
 
+def weighted_score(user_profile, internship):
+    weights = {"languages": 3, "courses": 2, "interests": 1}
+    internship_keywords = normalize_text(internship["role"] + " " + internship["company"])
+    total_weight = 0
+    earned_weight = 0
+    for category, weight in weights.items():
+        values = user_profile.get(category, [])
+        normalized_values = normalize_text(" ".join(values))
+        matches = sum(1 for word in normalized_values if word in internship_keywords)
+        earned_weight += matches * weight
+        total_weight += len(normalized_values) * weight
+    if total_weight == 0:
+        return 0.0
+    return round((earned_weight / total_weight) * 100, 1)
+
+
 def get_sample_data():
     user_profile = {
         "languages": ["Python", "Java", "SQL"],

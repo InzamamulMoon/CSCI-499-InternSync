@@ -83,6 +83,10 @@ def tfidf_score(user_profile, internships):
     return sorted(scored, key=lambda x: x["tfidf_score"], reverse=True)
 
 
+def filter_by_score(scored_internships, min_score=50.0):
+    return [i for i in scored_internships if i["score"] >= min_score]
+
+
 def get_sample_data():
     user_profile = {
         "languages": ["Python", "Java", "SQL"],

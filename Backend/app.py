@@ -157,3 +157,11 @@ def match():
         internship["explanation"] = explain_match(user_profile, internship)
         internship["skill_gap"] = skill_gap(user_profile, internship)
     return jsonify(results)
+
+
+@app.route("/skill-gap", methods=["POST"])
+def skill_gap_endpoint():
+    data = request.get_json()
+    user_profile = data["user_profile"]
+    internship = data["internship"]
+    return jsonify(skill_gap(user_profile, internship))

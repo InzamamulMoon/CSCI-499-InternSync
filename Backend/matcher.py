@@ -41,6 +41,31 @@ def weighted_score(user_profile, internship):
     return round((earned_weight / total_weight) * 100, 1)
 
 
+def explain_match(user_profile, internship):
+    internship_keywords = normalize_text(internship["role"] + " " + internship["company"])
+    categories = {"languages": "matched_languages", "courses": "matched_courses", "interests": "matched_interests"}
+    result = {}
+    all_matched = []
+    for category, key in categories.items():
+        matched = [v for v in user_profile.get(category, []) if any(w in internship_keywords for w in normalize_text(v))]
+        result[key] = matched
+        all_matched.extend(matched)
+    result["suggestion"] = "You match this role because of your experience in: " + ", ".join(all_matched)
+    return result
+
+
+def skill_gap(user_profile, internship):
+    internship_keywords = normalize_text(internship["role"] + " " + internship["company"])
+    user_keywords = normalize_text(" ".join(
+        user_profile.get("languages", []) +
+        user_profile.get("courses", []) +
+        user_profile.get("interests", [])
+    ))
+    missing = [kw for kw in internship_keywords if kw not in user_keywords]
+    gap_score = round((len(missing) / len(internship_keywords)) * 100, 1) if internship_keywords else 0.0
+    return {"missing_skills": missing, "gap_score": gap_score}
+
+
 def get_sample_data():
     user_profile = {
         "languages": ["Python", "Java", "SQL"],

@@ -87,6 +87,10 @@ def filter_by_score(scored_internships, min_score=50.0):
     return [i for i in scored_internships if i["score"] >= min_score]
 
 
+def top_matches(scored_internships, n=10):
+    return sorted(scored_internships, key=lambda x: x["score"], reverse=True)[:n]
+
+
 def get_sample_data():
     user_profile = {
         "languages": ["Python", "Java", "SQL"],

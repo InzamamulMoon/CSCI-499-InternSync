@@ -1,4 +1,6 @@
 import string
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 def normalize_text(text):
     stop_words = {"the", "and", "is", "in", "at", "for", "with", "a", "an", "of", "to", "are", "that", "this"}
@@ -64,6 +66,21 @@ def skill_gap(user_profile, internship):
     missing = [kw for kw in internship_keywords if kw not in user_keywords]
     gap_score = round((len(missing) / len(internship_keywords)) * 100, 1) if internship_keywords else 0.0
     return {"missing_skills": missing, "gap_score": gap_score}
+
+
+def tfidf_score(user_profile, internships):
+    user_text = " ".join(
+        user_profile.get("languages", []) +
+        user_profile.get("courses", []) +
+        user_profile.get("interests", [])
+    )
+    internship_texts = [i["role"] + " " + i["company"] for i in internships]
+    all_texts = [user_text] + internship_texts
+    vectorizer = TfidfVectorizer()
+    tfidf_matrix = vectorizer.fit_transform(all_texts)
+    similarities = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:]).flatten()
+    scored = [{**internship, "tfidf_score": round(float(score), 3)} for internship, score in zip(internships, similarities)]
+    return sorted(scored, key=lambda x: x["tfidf_score"], reverse=True)
 
 
 def get_sample_data():

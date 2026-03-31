@@ -1,132 +1,61 @@
-import { type KeyboardEvent, useCallback, useState } from "react";
+import { type KeyboardEvent, useState } from "react";
 import type { UserProfile } from "../types";
 
-//Have the functionality to add and remove tags
-function TagField({
-  id,
-  label,
-  description,
-  tags,
-  draft,
-  onDraftChange,
-  onAddTags,
-  onRemoveTag,
-}: {
-  id: string;
-  label: string;
-  description: string;
-  tags: string[];
-  draft: string;
-  onDraftChange: (value: string) => void;
-  onAddTags: (values: string[]) => void;
-  onRemoveTag: (value: string) => void;
-}) {
-
-  //use call back to commit the draft when user presses enter or comma
-  const commitDraft = useCallback(() => {
-    const parts = draft
-      .split(",")
-
-      //use map to trim the parts, filter empty parts and add tags
-      .map((s) => s.trim())
-      .filter(Boolean);
-    if (parts.length) {
-      onAddTags(parts);
-      onDraftChange("");
-    }
-  }, [draft, onAddTags, onDraftChange]);
-
-  //handle key down events
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
-      commitDraft();
-    }
-    if (e.key === "Backspace" && !draft && tags.length) {
-      onRemoveTag(tags[tags.length - 1]);
-    }
-  };
-
-  //if the user clicks on the container, focus the input
-  return (
-    <div className="space-y-2">
-      <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between">
-        <label
-          htmlFor={id}
-          className="text-sm font-semibold tracking-tight text-slate-800"
-        >
-          {label}
-        </label>
-        <span className="text-xs font-medium text-slate-500">
-          {description}
-        </span>
-      </div>
-      <div
-        className="flex min-h-[3rem] flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2 shadow-inner shadow-slate-200/40 transition focus-within:border-indigo-300 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-500/20"
-        onClick={() => document.getElementById(id)?.focus()}
-        role="group"
-        aria-label={label}
-      >
-        {tags.map((tag) => (
-          <span
-            key={tag}
-            className="inline-flex items-center gap-1 rounded-lg bg-white px-2.5 py-1 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200/80 transition hover:ring-slate-300"
-          >
-            {tag}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onRemoveTag(tag);
-              }}
-              className="ml-0.5 rounded-md p-0.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-              aria-label={`Remove ${tag}`}
-            >
-              ×
-            </button>
-          </span>
-        ))}
-        <input
-          id={id}
-          type="text"
-          value={draft}
-          onChange={(e) => onDraftChange(e.target.value)}
-          onKeyDown={onKeyDown}
-          onBlur={commitDraft}
-          placeholder="Type and press Enter or comma…"
-          className="min-w-[12rem] flex-1 bg-transparent py-1 text-sm text-slate-800 outline-none placeholder:text-slate-400"
-        />
-      </div>
-    </div>
-  );
-}
-
-//unique tags should be added to the existing tags. not case sensitive
+// helper: add tags from comma-separated input, skip duplicates (case insensitive)
 function mergeUnique(existing: string[], incoming: string[]) {
-  const set = new Set(existing.map((t) => t.toLowerCase()));
-  const next = [...existing];
+  const seen = new Set(existing.map((t) => t.toLowerCase()));
+  const out = [...existing];
   for (const t of incoming) {
-    const k = t.toLowerCase();
-    if (!set.has(k)) {
-      set.add(k);
-      next.push(t);
+    const key = t.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      out.push(t);
     }
   }
-  return next;
+  return out;
 }
 
-//Profile Page component
 export default function Profile() {
   const [languages, setLanguages] = useState<string[]>([]);
   const [courses, setCourses] = useState<string[]>([]);
   const [interests, setInterests] = useState<string[]>([]);
-  const [langDraft, setLangDraft] = useState("");
-  const [courseDraft, setCourseDraft] = useState("");
-  const [interestDraft, setInterestDraft] = useState("");
+  const [langInput, setLangInput] = useState("");
+  const [courseInput, setCourseInput] = useState("");
+  const [interestInput, setInterestInput] = useState("");
   const [uniqueBackground, setUniqueBackground] = useState("");
 
-  //save function to log profile
-  const handleSave = () => {
+  function addTags(
+    raw: string,
+    current: string[],
+    setList: (v: string[]) => void,
+    setInput: (v: string) => void,
+  ) {
+    const parts = raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (parts.length === 0) return;
+    setList(mergeUnique(current, parts));
+    setInput("");
+  }
+
+  function onTagKeyDown(
+    e: KeyboardEvent<HTMLInputElement>,
+    raw: string,
+    current: string[],
+    setList: (v: string[]) => void,
+    setInput: (v: string) => void,
+  ) {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addTags(raw, current, setList, setInput);
+    }
+    if (e.key === "Backspace" && raw === "" && current.length > 0) {
+      setList(current.slice(0, -1));
+    }
+  }
+
+  function handleSave() {
     const profile: UserProfile = {
       languages,
       courses,
@@ -134,99 +63,164 @@ export default function Profile() {
       unique_background: uniqueBackground.trim(),
     };
     console.log("InternSync profile (mock save)", profile);
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-100 via-white to-slate-50 px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-2xl">
-        <header className="mb-8 text-center sm:text-left">
-          <p className="text-xs font-semibold uppercase tracking-widest text-indigo-600">
-            InternSync
-          </p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            Your technical profile
-          </h1>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-600">
-            Capture languages, coursework, and interests as tags. The richer
-            your narrative below, the better our NLP matcher can surface
-            non-traditional strengths.
-          </p>
-        </header>
+    <div className="min-h-screen bg-gray-100 p-4">
+      <div className="mx-auto max-w-xl">
+        <h1 className="mb-1 text-2xl font-bold text-gray-900">InternSync</h1>
+        <p className="mb-6 text-sm text-gray-600">Your profile (for matching)</p>
 
-        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-lg shadow-slate-200/60 ring-1 ring-slate-900/5 sm:p-8">
-          <div className="space-y-8">
-            <TagField
-              id="profile-languages"
-              label="Languages & frameworks"
-              description="Comma-separated tags"
-              tags={languages}
-              draft={langDraft}
-              onDraftChange={setLangDraft}
-              onAddTags={(vals) => setLanguages((prev) => mergeUnique(prev, vals))}
-              onRemoveTag={(tag) =>
-                setLanguages((prev) => prev.filter((t) => t !== tag))
-              }
-            />
-
-            <TagField
-              id="profile-courses"
-              label="Courses"
-              description="e.g. CSCI 335, ML seminar"
-              tags={courses}
-              draft={courseDraft}
-              onDraftChange={setCourseDraft}
-              onAddTags={(vals) => setCourses((prev) => mergeUnique(prev, vals))}
-              onRemoveTag={(tag) =>
-                setCourses((prev) => prev.filter((t) => t !== tag))
-              }
-            />
-
-            <TagField
-              id="profile-interests"
-              label="Interests"
-              description="Domains you care about"
-              tags={interests}
-              draft={interestDraft}
-              onDraftChange={setInterestDraft}
-              onAddTags={(vals) =>
-                setInterests((prev) => mergeUnique(prev, vals))
-              }
-              onRemoveTag={(tag) =>
-                setInterests((prev) => prev.filter((t) => t !== tag))
-              }
-            />
-
-            <div className="space-y-2">
-              <label
-                htmlFor="unique-background"
-                className="text-sm font-semibold tracking-tight text-slate-800"
-              >
-                Unique background & projects
-              </label>
-              <p className="text-xs font-medium text-slate-500">
-                Side projects, work history, community roles, or anything that
-                does not fit a checkbox — used for embedding-based matching.
-              </p>
-              <textarea
-                id="unique-background"
-                value={uniqueBackground}
-                onChange={(e) => setUniqueBackground(e.target.value)}
-                rows={8}
-                placeholder="Example: Shipped a campus events PWA used by 2k students; contributed docs to an OSS CLI; former barista learning CS as a second career…"
-                className="w-full resize-y rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm leading-relaxed text-slate-800 shadow-inner shadow-slate-200/40 outline-none transition placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-500/20"
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
+          <div className="mb-6">
+            <label className="mb-1 block text-sm font-medium text-gray-800">
+              Languages (comma-separated tags)
+            </label>
+            <div className="mb-2 flex flex-wrap gap-2 rounded border border-gray-300 bg-gray-50 p-2">
+              {languages.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 rounded bg-white px-2 py-1 text-sm shadow-sm"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    className="text-gray-500 hover:text-gray-800"
+                    onClick={() =>
+                      setLanguages(languages.filter((t) => t !== tag))
+                    }
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              <input
+                className="min-w-[8rem] flex-1 border-0 bg-transparent text-sm outline-none"
+                value={langInput}
+                onChange={(e) => setLangInput(e.target.value)}
+                onKeyDown={(e) =>
+                  onTagKeyDown(e, langInput, languages, setLanguages, setLangInput)
+                }
+                onBlur={() =>
+                  addTags(langInput, languages, setLanguages, setLangInput)
+                }
+                placeholder="e.g. Python, TypeScript"
               />
             </div>
           </div>
 
-          <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-            <button
-              type="button"
-              onClick={handleSave}
-              className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-600/25 transition hover:bg-indigo-500 hover:shadow-lg hover:shadow-indigo-500/30 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-            >
-              Save profile
-            </button>
+          <div className="mb-6">
+            <label className="mb-1 block text-sm font-medium text-gray-800">
+              Courses (comma-separated tags)
+            </label>
+            <div className="mb-2 flex flex-wrap gap-2 rounded border border-gray-300 bg-gray-50 p-2">
+              {courses.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 rounded bg-white px-2 py-1 text-sm shadow-sm"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    className="text-gray-500 hover:text-gray-800"
+                    onClick={() =>
+                      setCourses(courses.filter((t) => t !== tag))
+                    }
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              <input
+                className="min-w-[8rem] flex-1 border-0 bg-transparent text-sm outline-none"
+                value={courseInput}
+                onChange={(e) => setCourseInput(e.target.value)}
+                onKeyDown={(e) =>
+                  onTagKeyDown(e, courseInput, courses, setCourses, setCourseInput)
+                }
+                onBlur={() =>
+                  addTags(courseInput, courses, setCourses, setCourseInput)
+                }
+                placeholder="e.g. CSCI 335"
+              />
+            </div>
           </div>
+
+          <div className="mb-6">
+            <label className="mb-1 block text-sm font-medium text-gray-800">
+              Interests (comma-separated tags)
+            </label>
+            <div className="mb-2 flex flex-wrap gap-2 rounded border border-gray-300 bg-gray-50 p-2">
+              {interests.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1 rounded bg-white px-2 py-1 text-sm shadow-sm"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    className="text-gray-500 hover:text-gray-800"
+                    onClick={() =>
+                      setInterests(interests.filter((t) => t !== tag))
+                    }
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              <input
+                className="min-w-[8rem] flex-1 border-0 bg-transparent text-sm outline-none"
+                value={interestInput}
+                onChange={(e) => setInterestInput(e.target.value)}
+                onKeyDown={(e) =>
+                  onTagKeyDown(
+                    e,
+                    interestInput,
+                    interests,
+                    setInterests,
+                    setInterestInput,
+                  )
+                }
+                onBlur={() =>
+                  addTags(
+                    interestInput,
+                    interests,
+                    setInterests,
+                    setInterestInput,
+                  )
+                }
+                placeholder="e.g. NLP, backend"
+              />
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <label
+              htmlFor="unique-bg"
+              className="mb-1 block text-sm font-medium text-gray-800"
+            >
+              Unique background & projects
+            </label>
+            <p className="mb-2 text-xs text-gray-500">
+              Extra stuff for NLP / embeddings (projects, jobs, etc.)
+            </p>
+            <textarea
+              id="unique-bg"
+              rows={8}
+              className="w-full rounded border border-gray-300 p-2 text-sm"
+              value={uniqueBackground}
+              onChange={(e) => setUniqueBackground(e.target.value)}
+              placeholder="Write whatever helps describe you..."
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSave}
+            className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            Save profile
+          </button>
         </div>
       </div>
     </div>

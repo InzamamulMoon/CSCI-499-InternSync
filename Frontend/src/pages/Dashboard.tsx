@@ -19,12 +19,20 @@ export default function Dashboard() {
             <h1 className="text-xl font-bold text-gray-900">Match dashboard</h1>
             <p className="text-sm text-gray-600">Mock data from our API shape</p>
           </div>
-          <Link
-            to="/profile"
-            className="rounded bg-gray-900 px-3 py-2 text-sm text-white hover:bg-gray-800"
-          >
-            Edit profile
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to="/tracker"
+              className="rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 hover:bg-gray-50"
+            >
+              Tracker
+            </Link>
+            <Link
+              to="/profile"
+              className="rounded bg-gray-900 px-3 py-2 text-sm text-white hover:bg-gray-800"
+            >
+              Edit profile
+            </Link>
+          </div>
         </div>
       </header>
 

@@ -184,12 +184,6 @@ def offseason_only():
     
     return jsonify(offseason_data)
 
-if __name__ == '__main__':
-    app.run(debug=True)
-
-    return all_categories
-
-
 @app.route("/match", methods=["POST"])
 def match():
     data = request.get_json()
@@ -227,3 +221,6 @@ def score_breakdown():
         "weighted_score": weighted_score(user_profile, internship),
         "internship": internship
     })
+
+if __name__ == '__main__':
+    app.run(debug=True)

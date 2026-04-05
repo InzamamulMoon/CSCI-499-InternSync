@@ -1,5 +1,6 @@
 import { type KeyboardEvent, useState } from "react";
 import type { UserProfile } from "../types";
+import { fetchMatches } from "../lib/api";
 
 // helper: add tags from comma-separated input, skip duplicates (case insensitive)
 function mergeUnique(existing: string[], incoming: string[]) {
@@ -55,7 +56,7 @@ export default function Profile() {
     }
   }
 
-  function handleSave() {
+  async function handleSave() {
     const profile: UserProfile = {
       languages,
       courses,
@@ -63,6 +64,12 @@ export default function Profile() {
       unique_background: uniqueBackground.trim(),
     };
     console.log("InternSync profile (mock save)", profile);
+    try {
+      const results = await fetchMatches(profile);
+      console.log("Matches received:", results);
+    } catch (error) {
+      console.log("Error fetching matches:", error);
+    }
   }
 
   return (

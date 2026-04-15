@@ -106,8 +106,7 @@ export default function Dashboard() {
           <p className="mb-4 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
             Add at least one tag under{" "}
             <strong>Languages</strong>, <strong>Courses</strong>, or{" "}
-            <strong>Interests</strong> so we can score listings (background alone
-            is not enough for this MVP matcher).{" "}
+            <strong>Interests</strong> so we can score listings.{" "}
             <Link to="/profile" className="font-medium underline">
               Edit profile
             </Link>
@@ -122,9 +121,9 @@ export default function Dashboard() {
         )}
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {matches.map((match: InternshipMatch) => (
+          {matches.map((match: InternshipMatch, index: number) => (
             <div
-              key={match.company + match.role}
+              key={`${match.company}-${match.role}-${match.terms ?? ""}-${index}`}
               className="flex flex-col rounded-lg border border-gray-200 bg-white p-4 shadow"
             >
               <div className="mb-3 flex justify-between gap-2">
@@ -134,6 +133,22 @@ export default function Dashboard() {
                   </h2>
                   <p className="text-sm font-medium text-blue-800">{match.role}</p>
                   <p className="text-sm text-gray-600">{match.location}</p>
+                  {(match.terms || match.age) && (
+                    <p className="mt-1.5 text-xs text-gray-500">
+                      {match.terms ? (
+                        <span className="mr-3">
+                          <span className="font-semibold text-gray-600">Season:</span>{" "}
+                          {match.terms}
+                        </span>
+                      ) : null}
+                      {match.age ? (
+                        <span>
+                          <span className="font-semibold text-gray-600">Posted:</span>{" "}
+                          {match.age}
+                        </span>
+                      ) : null}
+                    </p>
+                  )}
                 </div>
                 <div
                   className={

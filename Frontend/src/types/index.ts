@@ -15,6 +15,8 @@ export interface InternshipMatch {
   terms?: string;
   /** Listing freshness from repo (e.g. "1d ago", "1mo ago") */
   age?: string;
+  /** Tech/stack hints parsed from title + company (backend heuristics) */
+  listing_tags?: string[];
   explanation: {
     suggestion: string;
     matched_skills: string[];

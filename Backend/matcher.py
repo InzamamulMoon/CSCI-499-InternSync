@@ -1,3 +1,4 @@
+import re
 import string
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -132,6 +133,63 @@ def embedding_retrieve(user_profile, internships, top_k=100):
 def embedding_then_score(user_profile, internships, top_k=100):
     top_k_internships = embedding_retrieve(user_profile, internships, top_k=top_k)
     return score_internships(user_profile, top_k_internships)
+
+
+# Order matters: longer / more specific labels before shorter ones (e.g. JavaScript before Java).
+_LISTING_TAG_SPECS = [
+    ("JavaScript", re.compile(r"\bjavascript\b|\bjs\b", re.I)),
+    ("TypeScript", re.compile(r"\btypescript\b|\bts\b", re.I)),
+    ("Node.js", re.compile(r"\bnode\.js\b|\bnodejs\b", re.I)),
+    ("C++", re.compile(r"\bc\+\+\b", re.I)),
+    ("C#", re.compile(r"\bc#\b", re.I)),
+    ("Python", re.compile(r"\bpython\b", re.I)),
+    ("Java", re.compile(r"\bjava\b", re.I)),
+    ("Kotlin", re.compile(r"\bkotlin\b", re.I)),
+    ("Swift", re.compile(r"\bswift\b", re.I)),
+    ("Go", re.compile(r"\bgo\b", re.I)),
+    ("Rust", re.compile(r"\brust\b", re.I)),
+    ("Ruby", re.compile(r"\bruby\b", re.I)),
+    ("PHP", re.compile(r"\bphp\b", re.I)),
+    ("Scala", re.compile(r"\bscala\b", re.I)),
+    ("React", re.compile(r"\breact\b", re.I)),
+    ("Vue", re.compile(r"\bvue\b", re.I)),
+    ("Angular", re.compile(r"\bangular\b", re.I)),
+    ("Next.js", re.compile(r"\bnext\.js\b|\bnextjs\b", re.I)),
+    ("HTML", re.compile(r"\bhtml\b", re.I)),
+    ("CSS", re.compile(r"\bcss\b", re.I)),
+    ("SQL", re.compile(r"\bsql\b", re.I)),
+    ("PostgreSQL", re.compile(r"\bpostgres(ql)?\b", re.I)),
+    ("MongoDB", re.compile(r"\bmongo(db)?\b", re.I)),
+    ("Redis", re.compile(r"\bredis\b", re.I)),
+    ("AWS", re.compile(r"\baws\b", re.I)),
+    ("Azure", re.compile(r"\bazure\b", re.I)),
+    ("GCP", re.compile(r"\bgcp\b|\bgoogle cloud\b", re.I)),
+    ("Docker", re.compile(r"\bdocker\b", re.I)),
+    ("Kubernetes", re.compile(r"\bkubernetes\b|\bk8s\b", re.I)),
+    ("TensorFlow", re.compile(r"\btensorflow\b", re.I)),
+    ("PyTorch", re.compile(r"\bpytorch\b", re.I)),
+    ("Machine Learning", re.compile(r"\bmachine learning\b", re.I)),
+    ("Linux", re.compile(r"\blinux\b", re.I)),
+    ("Spring", re.compile(r"\bspring\b", re.I)),
+    ("Django", re.compile(r"\bdjango\b", re.I)),
+    ("Flask", re.compile(r"\bflask\b", re.I)),
+    ("GraphQL", re.compile(r"\bgraphql\b", re.I)),
+    ("iOS", re.compile(r"\bios\b", re.I)),
+    ("Android", re.compile(r"\bandroid\b", re.I)),
+    (".NET", re.compile(r"\.net\b|\bdotnet\b", re.I)),
+]
+
+
+def extract_listing_tags(internship, max_tags=12):
+    """Lightweight skill/stack hints from role + company text (not from a separate API field)."""
+    blob = f"{internship.get('role', '')} {internship.get('company', '')}"
+    out = []
+    for label, rx in _LISTING_TAG_SPECS:
+        if rx.search(blob) and label not in out:
+            out.append(label)
+        if len(out) >= max_tags:
+            break
+    return out
 
 
 def get_sample_data():

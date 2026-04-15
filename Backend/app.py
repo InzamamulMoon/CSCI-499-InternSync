@@ -4,7 +4,16 @@ import logging
 import requests
 import re
 from bs4 import BeautifulSoup
-from matcher import weighted_score, filter_by_score, top_matches, location_boost, explain_match, skill_gap, embedding_then_score
+from matcher import (
+    weighted_score,
+    filter_by_score,
+    top_matches,
+    location_boost,
+    explain_match,
+    skill_gap,
+    embedding_then_score,
+    extract_listing_tags,
+)
 from database import db
 from models import User, UserProfile, Application, Internship
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -241,6 +250,7 @@ def match():
             ),
         }
         internship["skill_gap"] = skill_gap(user_profile, internship)
+        internship["listing_tags"] = extract_listing_tags(internship)
     return jsonify(results)
 
 

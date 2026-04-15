@@ -149,6 +149,21 @@ export default function Dashboard() {
                       ) : null}
                     </p>
                   )}
+                  {match.listing_tags && match.listing_tags.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      <span className="w-full text-xs font-semibold text-gray-600">
+                        Looking for
+                      </span>
+                      {match.listing_tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 ring-1 ring-gray-200"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div
                   className={

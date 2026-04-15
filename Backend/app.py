@@ -4,7 +4,7 @@ import logging
 import requests
 import re
 from bs4 import BeautifulSoup
-from matcher import score_internships, get_sample_data, weighted_score, filter_by_score, top_matches, location_boost, explain_match, skill_gap
+from matcher import score_internships, weighted_score, filter_by_score, top_matches, location_boost, explain_match, skill_gap
 
 app = Flask(__name__)
 CORS(app, origins=['http://localhost:5173'], supports_credentials=True)
@@ -138,6 +138,21 @@ def fetch_and_parse_readme(url, season_name):
     return all_categories
 
 
+def flatten_scraped_internships(all_categories):
+    """
+    Scraper returns {category_name: [internship dict, ...], ...}.
+    Ali's score_internships() expects a flat list of dicts with at least
+    company, role, location (plus application_links etc. from the parser).
+    """
+    if not all_categories:
+        return []
+    flat = []
+    for _category_name, rows in all_categories.items():
+        for row in rows:
+            flat.append(dict(row))
+    return flat
+
+
 @app.route('/')
 def hello():
     summer_data = fetch_and_parse_readme(summer_url, "Summer")
@@ -192,15 +207,27 @@ def match():
     user_profile = data["user_profile"]
     preferred_location = data.get("preferred_location", None)
     min_score = data.get("min_score", 0.0)
-    top_n = data.get("top_n", 10)
-    _, sample_internships = get_sample_data()
-    results = score_internships(user_profile, sample_internships)
+
+    all_categories = fetch_and_parse_readme(summer_url, "Summer")
+    flattened = flatten_scraped_internships(all_categories)
+    if not flattened:
+        return jsonify({"error": "No internships scraped from summer README"}), 502
+
+    results = score_internships(user_profile, flattened)
     if preferred_location:
         results = location_boost(results, preferred_location)
     results = filter_by_score(results, min_score)
-    results = top_matches(results, top_n)
+    results = top_matches(results, 20)
     for internship in results:
-        internship["explanation"] = explain_match(user_profile, internship)
+        raw_explanation = explain_match(user_profile, internship)
+        internship["explanation"] = {
+            "suggestion": raw_explanation.get("suggestion", ""),
+            "matched_skills": (
+                raw_explanation.get("matched_languages", [])
+                + raw_explanation.get("matched_courses", [])
+                + raw_explanation.get("matched_interests", [])
+            ),
+        }
         internship["skill_gap"] = skill_gap(user_profile, internship)
     return jsonify(results)
 

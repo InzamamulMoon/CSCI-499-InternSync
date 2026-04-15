@@ -132,9 +132,24 @@ export default function Dashboard() {
                     {match.company}
                   </h2>
                   <p className="text-sm font-medium text-blue-800">{match.role}</p>
-                  <p className="text-sm text-gray-600">{match.location}</p>
+                  {match.listing_tags && match.listing_tags.length > 0 ? (
+                    <div
+                      className="mt-1.5 flex flex-wrap gap-1"
+                      title="Skills or stacks mentioned in the listing"
+                    >
+                      {match.listing_tags.map((tag, ti) => (
+                        <span
+                          key={`${tag}-${ti}`}
+                          className="rounded-md bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-900 ring-1 ring-indigo-100"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                  <p className="mt-1.5 text-sm text-gray-600">{match.location}</p>
                   {(match.terms || match.age) && (
-                    <p className="mt-1.5 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-gray-500">
                       {match.terms ? (
                         <span className="mr-3">
                           <span className="font-semibold text-gray-600">Season:</span>{" "}
@@ -148,21 +163,6 @@ export default function Dashboard() {
                         </span>
                       ) : null}
                     </p>
-                  )}
-                  {match.listing_tags && match.listing_tags.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      <span className="w-full text-xs font-semibold text-gray-600">
-                        Looking for
-                      </span>
-                      {match.listing_tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 ring-1 ring-gray-200"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
                   )}
                 </div>
                 <div

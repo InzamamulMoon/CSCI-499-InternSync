@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, startTransition } from "react";
 import { Link, useLocation } from "react-router-dom";
 import type { InternshipMatch } from "../types";
 import { fetchMatches } from "../lib/api";
@@ -7,6 +7,7 @@ import {
   profileReadyForMatching,
   storedProfileHasContent,
 } from "../lib/profileStorage";
+import { addMatchToToApply } from "../lib/kanbanStorage";
 
 function scoreColor(score: number) {
   if (score > 80) return "bg-green-200 text-green-900";
@@ -21,28 +22,39 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [noProfile, setNoProfile] = useState(false);
   const [needsTags, setNeedsTags] = useState(false);
+  const [trackMessage, setTrackMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const profile = readUserProfileFromStorage();
-    setError(null);
-    setNeedsTags(false);
-    setNoProfile(false);
 
     if (!profile || !storedProfileHasContent(profile)) {
-      setNoProfile(true);
-      setMatches([]);
-      setLoading(false);
+      startTransition(() => {
+        setError(null);
+        setNeedsTags(false);
+        setNoProfile(true);
+        setMatches([]);
+        setLoading(false);
+      });
       return;
     }
 
     if (!profileReadyForMatching(profile)) {
-      setNeedsTags(true);
-      setMatches([]);
-      setLoading(false);
+      startTransition(() => {
+        setError(null);
+        setNoProfile(false);
+        setNeedsTags(true);
+        setMatches([]);
+        setLoading(false);
+      });
       return;
     }
 
-    setLoading(true);
+    startTransition(() => {
+      setError(null);
+      setNoProfile(false);
+      setNeedsTags(false);
+      setLoading(true);
+    });
 
     fetchMatches(profile)
       .then((results) => {
@@ -120,6 +132,12 @@ export default function Dashboard() {
           </p>
         )}
 
+        {trackMessage && (
+          <p className="mb-4 rounded border border-green-200 bg-green-50 p-2 text-sm text-green-900">
+            {trackMessage}
+          </p>
+        )}
+
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {matches.map((match: InternshipMatch, index: number) => (
             <div
@@ -179,6 +197,29 @@ export default function Dashboard() {
                   Why this matched
                 </div>
                 {match.explanation.suggestion}
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
+                <button
+                  type="button"
+                  className="rounded bg-gray-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800"
+                  onClick={() => {
+                    const added = addMatchToToApply(match);
+                    setTrackMessage(
+                      added
+                        ? "Added to Kanban → To Apply"
+                        : "Already in To Apply",
+                    );
+                    window.setTimeout(() => setTrackMessage(null), 2600);
+                  }}
+                >
+                  Track application
+                </button>
+                <Link
+                  to="/tracker"
+                  className="text-xs font-medium text-blue-700 underline hover:text-blue-900"
+                >
+                  Open tracker
+                </Link>
               </div>
             </div>
           ))}

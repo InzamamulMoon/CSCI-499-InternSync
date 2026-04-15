@@ -1,6 +1,8 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import type { InternshipMatch } from "../types";
-import { mockInternships } from "../lib/mockData";
+import { fetchMatches } from "../lib/api";
+import { mockProfile } from "../lib/mockData";
 
 // green = strong match, yellow = ok, gray/red-ish = weak
 function scoreColor(score: number) {
@@ -10,6 +12,20 @@ function scoreColor(score: number) {
 }
 
 export default function Dashboard() {
+  const [matches, setMatches] = useState<InternshipMatch[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchMatches(mockProfile)
+      .then((results) => {
+        setMatches(results);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="border-b border-gray-200 bg-white p-4">
@@ -37,8 +53,9 @@ export default function Dashboard() {
       </header>
 
       <main className="mx-auto max-w-5xl p-4">
+        {loading && <p>Loading matches...</p>}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {mockInternships.map((match: InternshipMatch) => (
+          {matches.map((match: InternshipMatch) => (
             <div
               key={match.company + match.role}
               className="flex flex-col rounded-lg border border-gray-200 bg-white p-4 shadow"

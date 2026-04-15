@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 import logging
 import requests
 import re
@@ -6,6 +7,7 @@ from bs4 import BeautifulSoup
 from matcher import score_internships, get_sample_data, weighted_score, filter_by_score, top_matches, location_boost, explain_match, skill_gap
 
 app = Flask(__name__)
+CORS(app, origins=['http://localhost:5173'], supports_credentials=True)
 logging.basicConfig(level=logging.DEBUG)
 
 summer_url = "https://raw.githubusercontent.com/SimplifyJobs/Summer2026-Internships/dev/README.md"

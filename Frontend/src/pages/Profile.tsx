@@ -2,29 +2,11 @@ import { type KeyboardEvent, useState } from "react";
 import type { UserProfile } from "../types";
 import { fetchMatches } from "../lib/api";
 import { useLocalStorage } from "../hooks/useLocalStorage";
-
-const PROFILE_STORAGE_KEY = "internsync_user_profile";
-
-const emptyProfile: UserProfile = {
-  languages: [],
-  courses: [],
-  interests: [],
-  unique_background: "",
-};
-
-function parseUserProfile(raw: unknown): UserProfile {
-  if (!raw || typeof raw !== "object") return emptyProfile;
-  const r = raw as Partial<UserProfile>;
-  const asStrings = (arr: unknown) =>
-    Array.isArray(arr) ? arr.filter((x): x is string => typeof x === "string") : [];
-  return {
-    languages: asStrings(r.languages),
-    courses: asStrings(r.courses),
-    interests: asStrings(r.interests),
-    unique_background:
-      typeof r.unique_background === "string" ? r.unique_background : "",
-  };
-}
+import {
+  emptyUserProfile,
+  parseUserProfile,
+  USER_PROFILE_STORAGE_KEY,
+} from "../lib/profileStorage";
 
 function mergeUnique(existing: string[], incoming: string[]) {
   const seen = new Set(existing.map((t) => t.toLowerCase()));
@@ -41,8 +23,8 @@ function mergeUnique(existing: string[], incoming: string[]) {
 
 export default function Profile() {
   const [profile, setProfile] = useLocalStorage<UserProfile>(
-    PROFILE_STORAGE_KEY,
-    emptyProfile,
+    USER_PROFILE_STORAGE_KEY,
+    emptyUserProfile,
     parseUserProfile,
   );
 

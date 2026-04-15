@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import type { InternshipMatch } from "../types";
 import { fetchMatches } from "../lib/api";
-import { mockProfile } from "../lib/mockData";
+import {
+  readUserProfileFromStorage,
+  storedProfileHasContent,
+} from "../lib/profileStorage";
 
-// green = strong match, yellow = ok, gray/red-ish = weak
 function scoreColor(score: number) {
   if (score > 80) return "bg-green-200 text-green-900";
   if (score >= 50) return "bg-yellow-200 text-yellow-900";
@@ -14,14 +16,30 @@ function scoreColor(score: number) {
 export default function Dashboard() {
   const [matches, setMatches] = useState<InternshipMatch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [noProfile, setNoProfile] = useState(false);
 
   useEffect(() => {
-    fetchMatches(mockProfile)
+    const profile = readUserProfileFromStorage();
+    if (!profile || !storedProfileHasContent(profile)) {
+      setNoProfile(true);
+      setLoading(false);
+      return;
+    }
+
+    setNoProfile(false);
+    setLoading(true);
+    setError(null);
+
+    fetchMatches(profile)
       .then((results) => {
         setMatches(results);
-        setLoading(false);
       })
-      .catch(() => {
+      .catch((err: unknown) => {
+        setMatches([]);
+        setError(err instanceof Error ? err.message : "Could not load matches");
+      })
+      .finally(() => {
         setLoading(false);
       });
   }, []);
@@ -33,7 +51,9 @@ export default function Dashboard() {
           <div>
             <div className="text-sm font-semibold text-blue-700">InternSync</div>
             <h1 className="text-xl font-bold text-gray-900">Match dashboard</h1>
-            <p className="text-sm text-gray-600">Mock data from our API shape</p>
+            <p className="text-sm text-gray-600">
+              Live matches from your saved profile + backend /match
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Link
@@ -53,7 +73,29 @@ export default function Dashboard() {
       </header>
 
       <main className="mx-auto max-w-5xl p-4">
-        {loading && <p>Loading matches...</p>}
+        {loading && (
+          <p className="mb-4 rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+            Scraping GitHub and analyzing matches…
+          </p>
+        )}
+
+        {noProfile && !loading && (
+          <p className="mb-4 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            No saved profile yet.{" "}
+            <Link to="/profile" className="font-medium underline">
+              Open Profile
+            </Link>{" "}
+            and click Save profile first (runs on localStorage).
+          </p>
+        )}
+
+        {error && !loading && (
+          <p className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+            {error} — is the Flask backend running on{" "}
+            <code className="rounded bg-red-100 px-1">127.0.0.1:5000</code>?
+          </p>
+        )}
+
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {matches.map((match: InternshipMatch) => (
             <div

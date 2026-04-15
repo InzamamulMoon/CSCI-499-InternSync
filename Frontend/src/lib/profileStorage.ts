@@ -23,13 +23,22 @@ export function parseUserProfile(raw: unknown): UserProfile {
   };
 }
 
-/** True if user has entered anything worth sending to /match */
+/** Any saved fields (including narrative only) */
 export function storedProfileHasContent(p: UserProfile): boolean {
   return (
     p.languages.length > 0 ||
     p.courses.length > 0 ||
     p.interests.length > 0 ||
     p.unique_background.trim().length > 0
+  );
+}
+
+/** Dashboard only loads /match when there is at least one skill tag (avoids 0% wall-of-cards). */
+export function profileReadyForMatching(p: UserProfile): boolean {
+  return (
+    p.languages.length > 0 ||
+    p.courses.length > 0 ||
+    p.interests.length > 0
   );
 }
 

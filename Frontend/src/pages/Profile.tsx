@@ -1,6 +1,6 @@
 import { type KeyboardEvent, useState } from "react";
+import { Link } from "react-router-dom";
 import type { UserProfile } from "../types";
-import { fetchMatches } from "../lib/api";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import {
   emptyUserProfile,
@@ -31,6 +31,7 @@ export default function Profile() {
   const [langInput, setLangInput] = useState("");
   const [courseInput, setCourseInput] = useState("");
   const [interestInput, setInterestInput] = useState("");
+  const [saveNotice, setSaveNotice] = useState<"ok" | "err" | null>(null);
 
   function addTags(
     raw: string,
@@ -68,20 +69,19 @@ export default function Profile() {
     }
   }
 
-  async function handleSave() {
+  function handleSave() {
+    setSaveNotice(null);
     const toSave: UserProfile = {
       languages: profile.languages,
       courses: profile.courses,
       interests: profile.interests,
       unique_background: profile.unique_background.trim(),
     };
-    setProfile(toSave);
-    console.log("InternSync profile saved to localStorage", toSave);
     try {
-      const results = await fetchMatches(toSave);
-      console.log("Matches received:", results);
-    } catch (error) {
-      console.log("Error fetching matches:", error);
+      setProfile(toSave);
+      setSaveNotice("ok");
+    } catch {
+      setSaveNotice("err");
     }
   }
 
@@ -90,8 +90,18 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <div className="mx-auto max-w-xl">
-        <h1 className="mb-1 text-2xl font-bold text-gray-900">InternSync</h1>
-        <p className="mb-6 text-sm text-gray-600">Your profile (for matching)</p>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h1 className="mb-1 text-2xl font-bold text-gray-900">InternSync</h1>
+            <p className="text-sm text-gray-600">Your profile (for matching)</p>
+          </div>
+          <Link
+            to="/"
+            className="text-sm font-medium text-blue-700 underline hover:text-blue-900"
+          >
+            ← Back to matches
+          </Link>
+        </div>
 
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
           <div className="mb-6">
@@ -241,13 +251,35 @@ export default function Profile() {
             />
           </div>
 
-          <button
-            type="button"
-            onClick={handleSave}
-            className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            Save profile
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleSave}
+              className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Save profile
+            </button>
+            <Link
+              to="/"
+              className="rounded border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50"
+            >
+              View your matches
+            </Link>
+          </div>
+
+          {saveNotice === "ok" && (
+            <p className="mt-3 rounded border border-green-200 bg-green-50 p-2 text-sm text-green-900">
+              Profile saved in this browser (localStorage). Click{" "}
+              <strong>View your matches</strong> to load or refresh listings on
+              the home page (the matcher needs at least one language, course, or
+              interest tag).
+            </p>
+          )}
+          {saveNotice === "err" && (
+            <p className="mt-3 rounded border border-red-200 bg-red-50 p-2 text-sm text-red-800">
+              Could not save to storage (private mode or quota).
+            </p>
+          )}
         </div>
       </div>
     </div>

@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import type { InternshipMatch } from "../types";
 import { fetchMatches } from "../lib/api";
 import {
   readUserProfileFromStorage,
+  profileReadyForMatching,
   storedProfileHasContent,
 } from "../lib/profileStorage";
 
@@ -14,22 +15,34 @@ function scoreColor(score: number) {
 }
 
 export default function Dashboard() {
+  const location = useLocation();
   const [matches, setMatches] = useState<InternshipMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [noProfile, setNoProfile] = useState(false);
+  const [needsTags, setNeedsTags] = useState(false);
 
   useEffect(() => {
     const profile = readUserProfileFromStorage();
+    setError(null);
+    setNeedsTags(false);
+    setNoProfile(false);
+
     if (!profile || !storedProfileHasContent(profile)) {
       setNoProfile(true);
+      setMatches([]);
       setLoading(false);
       return;
     }
 
-    setNoProfile(false);
+    if (!profileReadyForMatching(profile)) {
+      setNeedsTags(true);
+      setMatches([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
-    setError(null);
 
     fetchMatches(profile)
       .then((results) => {
@@ -42,7 +55,7 @@ export default function Dashboard() {
       .finally(() => {
         setLoading(false);
       });
-  }, []);
+  }, [location.key]);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -86,6 +99,18 @@ export default function Dashboard() {
               Open Profile
             </Link>{" "}
             and click Save profile first (runs on localStorage).
+          </p>
+        )}
+
+        {needsTags && !loading && !noProfile && (
+          <p className="mb-4 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            Add at least one tag under{" "}
+            <strong>Languages</strong>, <strong>Courses</strong>, or{" "}
+            <strong>Interests</strong> so we can score listings (background alone
+            is not enough for this MVP matcher).{" "}
+            <Link to="/profile" className="font-medium underline">
+              Edit profile
+            </Link>
           </p>
         )}
 

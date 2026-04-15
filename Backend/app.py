@@ -215,6 +215,10 @@ def match():
     user_profile = data["user_profile"]
     preferred_location = data.get("preferred_location", None)
     min_score = data.get("min_score", 0.0)
+    try:
+        top_n = min(max(int(data.get("top_n", 72)), 1), 150)
+    except (TypeError, ValueError):
+        top_n = 72
 
     flattened = get_internships("summer")
  
@@ -225,7 +229,7 @@ def match():
     if preferred_location:
         results = location_boost(results, preferred_location)
     results = filter_by_score(results, min_score)
-    results = top_matches(results, 20)
+    results = top_matches(results, top_n)
     for internship in results:
         raw_explanation = explain_match(user_profile, internship)
         internship["explanation"] = {

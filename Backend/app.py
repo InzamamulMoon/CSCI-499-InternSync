@@ -3,6 +3,7 @@ from flask_cors import CORS
 import logging
 import requests
 import re
+import time 
 from bs4 import BeautifulSoup
 from matcher import score_internships, weighted_score, filter_by_score, top_matches, location_boost, explain_match, skill_gap
 
@@ -12,6 +13,18 @@ logging.basicConfig(level=logging.DEBUG)
 
 summer_url = "https://raw.githubusercontent.com/SimplifyJobs/Summer2026-Internships/dev/README.md"
 offseason_url = "https://raw.githubusercontent.com/SimplifyJobs/Summer2026-Internships/dev/README-Off-Season.md"
+
+_cache = {"data": None, "timestamp": 0}
+CACHE_TTL = 300  # 5 minutes
+ 
+def get_cached_internships():
+    if time.time() - _cache["timestamp"] < CACHE_TTL and _cache["data"]:
+        return _cache["data"]
+    data = fetch_and_parse_readme(summer_url, "Summer")
+    _cache["data"] = data
+    _cache["timestamp"] = time.time()
+    return data
+
 
 def fetch_and_parse_readme(url, season_name):
     response = requests.get(url)
@@ -200,6 +213,12 @@ def offseason_only():
         return jsonify({"error": "No internships found"}), 500
     
     return jsonify(offseason_data)
+
+@app.route("/refresh", methods=["POST"])
+def refresh():
+    _cache["timestamp"] = 0
+    get_cached_internships()
+    return jsonify({"message": "Cache refreshed"})
 
 @app.route("/match", methods=["POST"])
 def match():

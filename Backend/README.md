@@ -37,3 +37,41 @@ Keyword-based scoring uses weighted categories to reflect how relevant each part
 The weighted score is calculated as the sum of matched keywords multiplied by their category weight, divided by the maximum possible weighted score, expressed as a percentage.
 
 For more advanced matching, **TF-IDF cosine similarity** is also available via `tfidf_score`. This method vectorizes the user profile and each internship as text documents and measures the angle between them in vector space, capturing term importance relative to the full set of internships rather than relying on exact keyword overlap.
+
+## Database Architecture
+
+The database uses PostgreSQL with SQLAlchemy ORM for persistent storage of users, profiles, and application tracking.
+
+### Tables
+
+| Table | Description |
+|---|---|
+| `User` | Stores each user's email address and hashed password. |
+| `UserProfile` | Stores a user's languages, courses, interests, and unique background, linked to a User. |
+| `Application` | Stores Kanban-style application states (To Apply, Applied, Interviewing, Offer, Rejected) linked to a User. |
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/register` | POST | Creates a new user account with a hashed password. |
+| `/login` | POST | Validates credentials and returns a success response with the user ID. |
+| `/profile/save` | POST | Creates or updates the profile for a given user. |
+| `/profile/load` | GET | Returns the saved profile for a given user. |
+| `/applications/save` | POST | Creates a new application record for a given user. |
+| `/applications/load` | GET | Returns all application records for a given user. |
+
+### Setup
+
+1. Install dependencies:
+   ```
+   pip3 install -r requirements.txt
+   ```
+2. Create the PostgreSQL database:
+   ```
+   createdb internsync
+   ```
+3. Initialize tables:
+   ```
+   python3 init_db.py
+   ```

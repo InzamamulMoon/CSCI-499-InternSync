@@ -11,23 +11,33 @@ app = Flask(__name__)
 CORS(app, origins=['http://localhost:5173'], supports_credentials=True)
 logging.basicConfig(level=logging.DEBUG)
 
+
 summer_url = "https://raw.githubusercontent.com/SimplifyJobs/Summer2026-Internships/dev/README.md"
 offseason_url = "https://raw.githubusercontent.com/SimplifyJobs/Summer2026-Internships/dev/README-Off-Season.md"
 
-_cache = {"data": None, "timestamp": 0}
-CACHE_TTL = 300  # 5 minutes
+_cache={
+    "summer": {"data": None, "timestamp": 0},
+    "offseason": {"data": None, "timestamp": 0}
+}
+
+
+CACHE_TTL = 900  # 15 minutes
  
-def get_cached_internships():
-    if time.time() - _cache["timestamp"] < CACHE_TTL and _cache["data"]:
-        return _cache["data"]
-    data = fetch_and_parse_readme(summer_url, "Summer")
-    _cache["data"] = data
-    _cache["timestamp"] = time.time()
+def get_cached_internships(season="summer"):
+    cache = _cache[season]
+    if time.time() - cache["timestamp"] < CACHE_TTL and cache["data"]:
+        return cache["data"]
+    url = summer_url if season == "summer" else offseason_url
+    season_name = "Summer" if season == "summer" else "Off-Season"
+    data = fetch_and_parse_readme(url, season_name)
+    cache["data"] = data
+    cache["timestamp"] = time.time()
     return data
 
 
+
 def fetch_and_parse_readme(url, season_name):
-    response = requests.get(url)
+    response = requests.get(url, timeout=10)
     
     if response.status_code != 200:
         print(f"Error: Could not fetch {season_name} README (status {response.status_code})")

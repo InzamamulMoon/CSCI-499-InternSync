@@ -4,7 +4,7 @@ import logging
 import requests
 import re
 from bs4 import BeautifulSoup
-from matcher import score_internships, get_sample_data, weighted_score, filter_by_score, top_matches, location_boost, explain_match, skill_gap
+from matcher import score_internships, get_sample_data, weighted_score, filter_by_score, top_matches, location_boost, explain_match, skill_gap, embedding_then_score
 from database import db
 from models import User, UserProfile, Application
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -219,7 +219,7 @@ def match():
     if not flattened:
         return jsonify({"error": "No internships scraped from summer README"}), 502
 
-    results = score_internships(user_profile, flattened)
+    results = embedding_then_score(user_profile, flattened, top_k=100)
     if preferred_location:
         results = location_boost(results, preferred_location)
     results = filter_by_score(results, min_score)

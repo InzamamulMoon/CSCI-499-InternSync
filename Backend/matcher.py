@@ -101,6 +101,39 @@ def location_boost(scored_internships, preferred_location):
     return sorted(boosted, key=lambda x: x["score"], reverse=True)
 
 
+def embed_text(texts):
+    from sentence_transformers import SentenceTransformer
+    import numpy as np
+    model = SentenceTransformer("all-MiniLM-L6-v2")
+    return model.encode(texts)
+
+
+def embedding_retrieve(user_profile, internships, top_k=100):
+    import numpy as np
+    user_text = " ".join(
+        user_profile.get("languages", []) +
+        user_profile.get("courses", []) +
+        user_profile.get("interests", [])
+    )
+    internship_texts = [i["role"] + " " + i["company"] for i in internships]
+    all_texts = [user_text] + internship_texts
+    embeddings = embed_text(all_texts)
+    user_emb = embeddings[0:1]
+    internship_embs = embeddings[1:]
+    similarities = cosine_similarity(user_emb, internship_embs).flatten()
+    scored = [
+        {**internship, "embedding_similarity": round(float(sim), 4)}
+        for internship, sim in zip(internships, similarities)
+    ]
+    scored.sort(key=lambda x: x["embedding_similarity"], reverse=True)
+    return scored[:top_k]
+
+
+def embedding_then_score(user_profile, internships, top_k=100):
+    top_k_internships = embedding_retrieve(user_profile, internships, top_k=top_k)
+    return score_internships(user_profile, top_k_internships)
+
+
 def get_sample_data():
     user_profile = {
         "languages": ["Python", "Java", "SQL"],

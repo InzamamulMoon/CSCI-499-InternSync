@@ -75,3 +75,9 @@ The database uses PostgreSQL with SQLAlchemy ORM for persistent storage of users
    ```
    python3 init_db.py
    ```
+
+## Embedding-Based Matching
+
+The `/match` endpoint now uses sentence-transformers with the `all-MiniLM-L6-v2` model to convert user profiles and internship descriptions into dense vector embeddings. Cosine similarity is computed between the user embedding and every internship embedding to retrieve the top 100 most semantically relevant internships. Weighted keyword scoring is then applied to just those 100 results to produce the final ranking.
+
+This two-stage approach follows the professor's recommendation to move beyond TF-IDF into language model embeddings: the embedding stage handles semantic similarity at scale, while the weighted scoring stage preserves the interpretable, category-weighted ranking the system was built on.

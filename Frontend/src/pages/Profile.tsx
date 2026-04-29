@@ -1,8 +1,31 @@
 import { type KeyboardEvent, useState } from "react";
 import type { UserProfile } from "../types";
 import { fetchMatches } from "../lib/api";
+import { useLocalStorage } from "../hooks/useLocalStorage";
 
-// helper: add tags from comma-separated input, skip duplicates (case insensitive)
+const PROFILE_STORAGE_KEY = "internsync_user_profile";
+
+const emptyProfile: UserProfile = {
+  languages: [],
+  courses: [],
+  interests: [],
+  unique_background: "",
+};
+
+function parseUserProfile(raw: unknown): UserProfile {
+  if (!raw || typeof raw !== "object") return emptyProfile;
+  const r = raw as Partial<UserProfile>;
+  const asStrings = (arr: unknown) =>
+    Array.isArray(arr) ? arr.filter((x): x is string => typeof x === "string") : [];
+  return {
+    languages: asStrings(r.languages),
+    courses: asStrings(r.courses),
+    interests: asStrings(r.interests),
+    unique_background:
+      typeof r.unique_background === "string" ? r.unique_background : "",
+  };
+}
+
 function mergeUnique(existing: string[], incoming: string[]) {
   const seen = new Set(existing.map((t) => t.toLowerCase()));
   const out = [...existing];
@@ -17,18 +40,19 @@ function mergeUnique(existing: string[], incoming: string[]) {
 }
 
 export default function Profile() {
-  const [languages, setLanguages] = useState<string[]>([]);
-  const [courses, setCourses] = useState<string[]>([]);
-  const [interests, setInterests] = useState<string[]>([]);
+  const [profile, setProfile] = useLocalStorage<UserProfile>(
+    PROFILE_STORAGE_KEY,
+    emptyProfile,
+    parseUserProfile,
+  );
+
   const [langInput, setLangInput] = useState("");
   const [courseInput, setCourseInput] = useState("");
   const [interestInput, setInterestInput] = useState("");
-  const [uniqueBackground, setUniqueBackground] = useState("");
 
   function addTags(
     raw: string,
-    current: string[],
-    setList: (v: string[]) => void,
+    field: "languages" | "courses" | "interests",
     setInput: (v: string) => void,
   ) {
     const parts = raw
@@ -36,41 +60,50 @@ export default function Profile() {
       .map((s) => s.trim())
       .filter(Boolean);
     if (parts.length === 0) return;
-    setList(mergeUnique(current, parts));
+    setProfile((p) => ({
+      ...p,
+      [field]: mergeUnique(p[field], parts),
+    }));
     setInput("");
   }
 
   function onTagKeyDown(
     e: KeyboardEvent<HTMLInputElement>,
     raw: string,
+    field: "languages" | "courses" | "interests",
     current: string[],
-    setList: (v: string[]) => void,
     setInput: (v: string) => void,
   ) {
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
-      addTags(raw, current, setList, setInput);
+      addTags(raw, field, setInput);
     }
     if (e.key === "Backspace" && raw === "" && current.length > 0) {
-      setList(current.slice(0, -1));
+      setProfile((p) => ({
+        ...p,
+        [field]: p[field].slice(0, -1),
+      }));
     }
   }
 
   async function handleSave() {
-    const profile: UserProfile = {
-      languages,
-      courses,
-      interests,
-      unique_background: uniqueBackground.trim(),
+    const toSave: UserProfile = {
+      languages: profile.languages,
+      courses: profile.courses,
+      interests: profile.interests,
+      unique_background: profile.unique_background.trim(),
     };
-    console.log("InternSync profile (mock save)", profile);
+    setProfile(toSave);
+    console.log("InternSync profile saved to localStorage", toSave);
     try {
-      const results = await fetchMatches(profile);
+      const results = await fetchMatches(toSave);
       console.log("Matches received:", results);
     } catch (error) {
       console.log("Error fetching matches:", error);
     }
   }
+
+  const { languages, courses, interests, unique_background } = profile;
 
   return (
     <div className="min-h-screen bg-gray-100 p-4">
@@ -94,7 +127,10 @@ export default function Profile() {
                     type="button"
                     className="text-gray-500 hover:text-gray-800"
                     onClick={() =>
-                      setLanguages(languages.filter((t) => t !== tag))
+                      setProfile((p) => ({
+                        ...p,
+                        languages: p.languages.filter((t) => t !== tag),
+                      }))
                     }
                   >
                     ×
@@ -106,11 +142,9 @@ export default function Profile() {
                 value={langInput}
                 onChange={(e) => setLangInput(e.target.value)}
                 onKeyDown={(e) =>
-                  onTagKeyDown(e, langInput, languages, setLanguages, setLangInput)
+                  onTagKeyDown(e, langInput, "languages", languages, setLangInput)
                 }
-                onBlur={() =>
-                  addTags(langInput, languages, setLanguages, setLangInput)
-                }
+                onBlur={() => addTags(langInput, "languages", setLangInput)}
                 placeholder="e.g. Python, TypeScript"
               />
             </div>
@@ -131,7 +165,10 @@ export default function Profile() {
                     type="button"
                     className="text-gray-500 hover:text-gray-800"
                     onClick={() =>
-                      setCourses(courses.filter((t) => t !== tag))
+                      setProfile((p) => ({
+                        ...p,
+                        courses: p.courses.filter((t) => t !== tag),
+                      }))
                     }
                   >
                     ×
@@ -143,11 +180,9 @@ export default function Profile() {
                 value={courseInput}
                 onChange={(e) => setCourseInput(e.target.value)}
                 onKeyDown={(e) =>
-                  onTagKeyDown(e, courseInput, courses, setCourses, setCourseInput)
+                  onTagKeyDown(e, courseInput, "courses", courses, setCourseInput)
                 }
-                onBlur={() =>
-                  addTags(courseInput, courses, setCourses, setCourseInput)
-                }
+                onBlur={() => addTags(courseInput, "courses", setCourseInput)}
                 placeholder="e.g. CSCI 335"
               />
             </div>
@@ -168,7 +203,10 @@ export default function Profile() {
                     type="button"
                     className="text-gray-500 hover:text-gray-800"
                     onClick={() =>
-                      setInterests(interests.filter((t) => t !== tag))
+                      setProfile((p) => ({
+                        ...p,
+                        interests: p.interests.filter((t) => t !== tag),
+                      }))
                     }
                   >
                     ×
@@ -183,18 +221,13 @@ export default function Profile() {
                   onTagKeyDown(
                     e,
                     interestInput,
+                    "interests",
                     interests,
-                    setInterests,
                     setInterestInput,
                   )
                 }
                 onBlur={() =>
-                  addTags(
-                    interestInput,
-                    interests,
-                    setInterests,
-                    setInterestInput,
-                  )
+                  addTags(interestInput, "interests", setInterestInput)
                 }
                 placeholder="e.g. NLP, backend"
               />
@@ -215,8 +248,13 @@ export default function Profile() {
               id="unique-bg"
               rows={8}
               className="w-full rounded border border-gray-300 p-2 text-sm"
-              value={uniqueBackground}
-              onChange={(e) => setUniqueBackground(e.target.value)}
+              value={unique_background}
+              onChange={(e) =>
+                setProfile((p) => ({
+                  ...p,
+                  unique_background: e.target.value,
+                }))
+              }
               placeholder="Write whatever helps describe you..."
             />
           </div>

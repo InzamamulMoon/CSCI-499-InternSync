@@ -161,21 +161,6 @@ def fetch_and_parse_readme(url, season_name):
     return all_categories
 
 
-def flatten_scraped_internships(all_categories):
-    """
-    Scraper returns {category_name: [internship dict, ...], ...}.
-    Ali's score_internships() expects a flat list of dicts with at least
-    company, role, location (plus application_links etc. from the parser).
-    """
-    if not all_categories:
-        return []
-    flat = []
-    for _category_name, rows in all_categories.items():
-        for row in rows:
-            flat.append(dict(row))
-    return flat
-
-
 @app.route('/')
 def hello():
     summer_data = fetch_and_parse_readme(summer_url, "Summer")
@@ -237,10 +222,13 @@ def match():
     preferred_location = data.get("preferred_location", None)
     min_score = data.get("min_score", 0.0)
 
-    all_categories = fetch_and_parse_readme(summer_url, "Summer")
-    flattened = flatten_scraped_internships(all_categories)
+    all_categories = get_cached_internships("summer")
+    flattened = []
+    for rows in all_categories.values():
+        flattened.extend(rows)
+ 
     if not flattened:
-        return jsonify({"error": "No internships scraped from summer README"}), 502
+        return jsonify({"error": "No internships found"}), 502
 
     results = score_internships(user_profile, flattened)
     if preferred_location:

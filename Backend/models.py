@@ -42,3 +42,25 @@ class Application(Base):
     applied_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="applications")
+
+class Internship(db.Model):
+    __tablename__ = "internships"
+    id = db.Column(db.Integer, primary_key=True)
+    company = db.Column(db.String, nullable=False)
+    role = db.Column(db.String, nullable=False)
+    location = db.Column(db.String)
+    terms = db.Column(db.String)
+    application_links = db.Column(db.Text)  # stored as JSON string
+    age = db.Column(db.String)
+    season = db.Column(db.String)  # "summer" or "offseason"
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "company": self.company,
+            "role": self.role,
+            "location": self.location,
+            "terms": self.terms,
+            "application_links": json.loads(self.application_links) if self.application_links else [],
+            "age": self.age
+        }

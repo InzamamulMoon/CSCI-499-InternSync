@@ -5,10 +5,16 @@ import requests
 import re
 import time 
 from bs4 import BeautifulSoup
-from matcher import score_internships, weighted_score, filter_by_score, top_matches, location_boost, explain_match, skill_gap
+from matcher import score_internships, get_sample_data, weighted_score, filter_by_score, top_matches, location_boost, explain_match, skill_gap, embedding_then_score
+from database import db
+from models import User, UserProfile, Application
+from werkzeug.security import generate_password_hash, check_password_hash
+import json
 
 app = Flask(__name__)
 CORS(app, origins=['http://localhost:5173'], supports_credentials=True)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost/internsync'
+db.init_app(app)
 logging.basicConfig(level=logging.DEBUG)
 
 
@@ -230,7 +236,7 @@ def match():
     if not flattened:
         return jsonify({"error": "No internships found"}), 502
 
-    results = score_internships(user_profile, flattened)
+    results = embedding_then_score(user_profile, flattened, top_k=100)
     if preferred_location:
         results = location_boost(results, preferred_location)
     results = filter_by_score(results, min_score)
@@ -267,6 +273,100 @@ def score_breakdown():
         "weighted_score": weighted_score(user_profile, internship),
         "internship": internship
     })
+
+@app.route("/register", methods=["POST"])
+def register():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+    if User.query.filter_by(email=email).first():
+        return jsonify({"error": "Email already exists"}), 400
+    user = User(email=email, password_hash=generate_password_hash(password))
+    db.session.add(user)
+    db.session.commit()
+    return jsonify({"message": "User registered successfully"}), 201
+
+
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+    user = User.query.filter_by(email=email).first()
+    if not user or not check_password_hash(user.password_hash, password):
+        return jsonify({"error": "Invalid email or password"}), 401
+    return jsonify({"message": "Login successful", "user_id": user.id})
+
+
+@app.route("/profile/save", methods=["POST"])
+def profile_save():
+    data = request.get_json()
+    user_id = data.get("user_id")
+    profile = UserProfile.query.filter_by(user_id=user_id).first()
+    if profile:
+        profile.languages = json.dumps(data.get("languages", []))
+        profile.courses = json.dumps(data.get("courses", []))
+        profile.interests = json.dumps(data.get("interests", []))
+        profile.unique_background = data.get("unique_background")
+    else:
+        profile = UserProfile(
+            user_id=user_id,
+            languages=json.dumps(data.get("languages", [])),
+            courses=json.dumps(data.get("courses", [])),
+            interests=json.dumps(data.get("interests", [])),
+            unique_background=data.get("unique_background"),
+        )
+        db.session.add(profile)
+    db.session.commit()
+    return jsonify({"message": "Profile saved successfully"})
+
+
+@app.route("/profile/load", methods=["GET"])
+def profile_load():
+    user_id = request.args.get("user_id")
+    profile = UserProfile.query.filter_by(user_id=user_id).first()
+    if not profile:
+        return jsonify({"error": "Profile not found"}), 404
+    return jsonify({
+        "user_id": profile.user_id,
+        "languages": json.loads(profile.languages) if profile.languages else [],
+        "courses": json.loads(profile.courses) if profile.courses else [],
+        "interests": json.loads(profile.interests) if profile.interests else [],
+        "unique_background": profile.unique_background,
+    })
+
+
+@app.route("/applications/save", methods=["POST"])
+def applications_save():
+    data = request.get_json()
+    application = Application(
+        user_id=data.get("user_id"),
+        company=data.get("company"),
+        role=data.get("role"),
+        location=data.get("location"),
+        status=data.get("status", "To Apply"),
+    )
+    db.session.add(application)
+    db.session.commit()
+    return jsonify({"message": "Application saved successfully", "id": application.id})
+
+
+@app.route("/applications/load", methods=["GET"])
+def applications_load():
+    user_id = request.args.get("user_id")
+    applications = Application.query.filter_by(user_id=user_id).all()
+    return jsonify([
+        {
+            "id": a.id,
+            "company": a.company,
+            "role": a.role,
+            "location": a.location,
+            "status": a.status,
+            "applied_at": a.applied_at.isoformat() if a.applied_at else None,
+        }
+        for a in applications
+    ])
+
 
 if __name__ == '__main__':
     app.run(debug=True)

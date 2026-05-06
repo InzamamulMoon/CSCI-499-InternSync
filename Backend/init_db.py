@@ -1,5 +1,8 @@
-from database import engine, Base
-from models import User, UserProfile, Application
+# Replace entire init_db.py with this
+from app import app
+from database import db
+from models import User, UserProfile, Application, Internship
 
-Base.metadata.create_all(engine)
-print("Database tables created successfully")
+with app.app_context():
+    db.create_all()
+    print("Database tables created successfully")

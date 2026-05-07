@@ -1,4 +1,3 @@
-# Replace entire init_db.py with this
 from app import app
 from database import db
 from models import User, UserProfile, Application, Internship

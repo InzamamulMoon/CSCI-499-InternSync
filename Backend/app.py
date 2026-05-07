@@ -3,11 +3,10 @@ from flask_cors import CORS
 import logging
 import requests
 import re
-import time 
 from bs4 import BeautifulSoup
-from matcher import score_internships, get_sample_data, weighted_score, filter_by_score, top_matches, location_boost, explain_match, skill_gap, embedding_then_score
+from matcher import weighted_score, filter_by_score, top_matches, location_boost, explain_match, skill_gap, embedding_then_score
 from database import db
-from models import User, UserProfile, Application
+from models import User, UserProfile, Application, Internship
 from werkzeug.security import generate_password_hash, check_password_hash
 import json
 
@@ -21,24 +20,10 @@ logging.basicConfig(level=logging.DEBUG)
 summer_url = "https://raw.githubusercontent.com/SimplifyJobs/Summer2026-Internships/dev/README.md"
 offseason_url = "https://raw.githubusercontent.com/SimplifyJobs/Summer2026-Internships/dev/README-Off-Season.md"
 
-_cache={
-    "summer": {"data": None, "timestamp": 0},
-    "offseason": {"data": None, "timestamp": 0}
-}
-
-
-CACHE_TTL = 900  # 15 minutes
  
-def get_cached_internships(season="summer"):
-    cache = _cache[season]
-    if time.time() - cache["timestamp"] < CACHE_TTL and cache["data"]:
-        return cache["data"]
-    url = summer_url if season == "summer" else offseason_url
-    season_name = "Summer" if season == "summer" else "Off-Season"
-    data = fetch_and_parse_readme(url, season_name)
-    cache["data"] = data
-    cache["timestamp"] = time.time()
-    return data
+def get_internships(season):
+    internships = Internship.query.filter_by(season=season).all()
+    return [i.to_dict() for i in internships]
 
 
 
@@ -169,57 +154,41 @@ def fetch_and_parse_readme(url, season_name):
 
 @app.route('/')
 def hello():
-    summer_data = fetch_and_parse_readme(summer_url, "Summer")
-    offseason_data = fetch_and_parse_readme(offseason_url, "Off-Season")
-    
-    result = {
-        'summer_2026': summer_data,
-        'off_season': offseason_data
-    }
-    
-    summer_total = sum(len(v) for v in summer_data.values())
-    offseason_total = sum(len(v) for v in offseason_data.values())
+    summer_data = get_internships("summer")
+    offseason_data = get_internships("offseason")
+
+    summer_total = len(summer_data)
+    offseason_total = len(offseason_data)
     total = summer_total + offseason_total
-    
+
     if total == 0:
         return jsonify({"error": "No internships found"}), 500
-    
-    result['summary'] = {
-        'summer_count': summer_total,
-        'offseason_count': offseason_total,
-        'total_count': total
-    }
-    
-    return jsonify(result)
+
+    return jsonify({
+        'summer_2026': summer_data,
+        'off_season': offseason_data,
+        'summary': {
+            'summer_count': summer_total,
+            'offseason_count': offseason_total,
+            'total_count': total
+        }
+    })
+
 
 @app.route('/summer')
 def summer_only():
-    """Endpoint for summer internships only"""
-    summer_data = fetch_and_parse_readme(summer_url, "Summer 2026")
-    total = sum(len(v) for v in summer_data.values())
-    
-    if total == 0:
+    summer_data = get_internships("summer")
+    if not summer_data:
         return jsonify({"error": "No internships found"}), 500
-    
     return jsonify(summer_data)
  
  
 @app.route('/offseason')
 def offseason_only():
-    """Endpoint for off-season internships only"""
-    offseason_data = fetch_and_parse_readme(offseason_url, "Off-Season")
-    total = sum(len(v) for v in offseason_data.values())
-    
-    if total == 0:
+    offseason_data = get_internships("offseason")
+    if not offseason_data:
         return jsonify({"error": "No internships found"}), 500
-    
     return jsonify(offseason_data)
-
-@app.route("/refresh", methods=["POST"])
-def refresh():
-    _cache["timestamp"] = 0
-    get_cached_internships()
-    return jsonify({"message": "Cache refreshed"})
 
 @app.route("/match", methods=["POST"])
 def match():
@@ -228,10 +197,7 @@ def match():
     preferred_location = data.get("preferred_location", None)
     min_score = data.get("min_score", 0.0)
 
-    all_categories = get_cached_internships("summer")
-    flattened = []
-    for rows in all_categories.values():
-        flattened.extend(rows)
+    flattened = get_internships("summer")
  
     if not flattened:
         return jsonify({"error": "No internships found"}), 502

@@ -1,7 +1,7 @@
 from app import app, fetch_and_parse_readme
 from database import db
 from models import Internship
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 
 summer_url = "https://raw.githubusercontent.com/SimplifyJobs/Summer2026-Internships/dev/README.md"
@@ -27,7 +27,8 @@ def sync_internships(season):
                     application_links=json.dumps(row["application_links"]),
                     age=row["age"],
                     season=season,
-                    last_updated=datetime.utcnow()
+                    last_updated=datetime.now(timezone.utc)
+
                 ))
         db.session.commit()
         print(f"Synced {season} internships to database successfully")

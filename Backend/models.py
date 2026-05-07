@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from database import db
 import json
 
@@ -7,7 +7,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String, unique=True, nullable=False)
     password_hash = db.Column(db.String, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     profile = db.relationship("UserProfile", back_populates="user", uselist=False)
     applications = db.relationship("Application", back_populates="user")
 
@@ -19,7 +19,7 @@ class UserProfile(db.Model):
     courses = db.Column(db.Text)
     interests = db.Column(db.Text)
     unique_background = db.Column(db.Text, nullable=True)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     user = db.relationship("User", back_populates="profile")
 
 class Application(db.Model):
@@ -30,7 +30,7 @@ class Application(db.Model):
     role = db.Column(db.String)
     location = db.Column(db.String)
     status = db.Column(db.String, default="To Apply")
-    applied_at = db.Column(db.DateTime, default=datetime.utcnow)
+    applied_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     user = db.relationship("User", back_populates="applications")
 
 class Internship(db.Model):
@@ -43,7 +43,7 @@ class Internship(db.Model):
     application_links = db.Column(db.Text)
     age = db.Column(db.String)
     season = db.Column(db.String)
-    last_updated = db.Column(db.DateTime, default=datetime.utcnow)
+    last_updated = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
         return {

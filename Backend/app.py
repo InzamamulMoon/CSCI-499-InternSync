@@ -28,7 +28,14 @@ def get_internships(season):
 
 
 def fetch_and_parse_readme(url, season_name):
-    response = requests.get(url, timeout=10)
+    try:
+        response = requests.get(url, timeout=10)
+    except requests.exceptions.Timeout:
+        print(f"Timeout fetching {season_name} README")
+        return {}
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching {season_name} README: {e}")
+        return {}
     
     if response.status_code != 200:
         print(f"Error: Could not fetch {season_name} README (status {response.status_code})")
@@ -173,7 +180,12 @@ def hello():
             'total_count': total
         }
     })
-
+@app.route("/health")
+def health():
+    return jsonify({
+        "status": "ok",
+        "database": "connected"
+    })
 
 @app.route('/summer')
 def summer_only():
@@ -193,6 +205,9 @@ def offseason_only():
 @app.route("/match", methods=["POST"])
 def match():
     data = request.get_json()
+    if not data or "user_profile" not in data:
+        return jsonify({"error": "user_profile is required"}), 400
+    
     user_profile = data["user_profile"]
     preferred_location = data.get("preferred_location", None)
     min_score = data.get("min_score", 0.0)
@@ -224,6 +239,8 @@ def match():
 @app.route("/skill-gap", methods=["POST"])
 def skill_gap_endpoint():
     data = request.get_json()
+    if not data or "user_profile" not in data or "internship" not in data:
+        return jsonify({"error": "user_profile and internship are required"}), 400
     user_profile = data["user_profile"]
     internship = data["internship"]
     return jsonify(skill_gap(user_profile, internship))
@@ -232,6 +249,8 @@ def skill_gap_endpoint():
 @app.route("/score-breakdown", methods=["POST"])
 def score_breakdown():
     data = request.get_json()
+    if not data or "user_profile" not in data or "internship" not in data:
+        return jsonify({"error": "user_profile and internship are required"}), 400
     user_profile = data["user_profile"]
     internship = data["internship"]
     return jsonify({
@@ -243,6 +262,9 @@ def score_breakdown():
 @app.route("/register", methods=["POST"])
 def register():
     data = request.get_json()
+    if not data or "email" not in data or "password" not in data:
+        return jsonify({"error": "email and password are required"}), 400
+
     email = data.get("email")
     password = data.get("password")
     if User.query.filter_by(email=email).first():
@@ -256,6 +278,8 @@ def register():
 @app.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
+    if not data or "email" not in data or "password" not in data:
+        return jsonify({"error": "email and password are required"}), 400
     email = data.get("email")
     password = data.get("password")
     user = User.query.filter_by(email=email).first()
@@ -267,6 +291,8 @@ def login():
 @app.route("/profile/save", methods=["POST"])
 def profile_save():
     data = request.get_json()
+    if not data or "user_id" not in data:
+        return jsonify({"error": "user_id is required"}), 400
     user_id = data.get("user_id")
     profile = UserProfile.query.filter_by(user_id=user_id).first()
     if profile:
@@ -290,6 +316,8 @@ def profile_save():
 @app.route("/profile/load", methods=["GET"])
 def profile_load():
     user_id = request.args.get("user_id")
+    if not user_id:
+        return jsonify({"error": "user_id is required"}), 400
     profile = UserProfile.query.filter_by(user_id=user_id).first()
     if not profile:
         return jsonify({"error": "Profile not found"}), 404
@@ -305,6 +333,8 @@ def profile_load():
 @app.route("/applications/save", methods=["POST"])
 def applications_save():
     data = request.get_json()
+    if not data or "user_id" not in data:
+        return jsonify({"error": "user_id is required"}), 400
     application = Application(
         user_id=data.get("user_id"),
         company=data.get("company"),
@@ -320,6 +350,8 @@ def applications_save():
 @app.route("/applications/load", methods=["GET"])
 def applications_load():
     user_id = request.args.get("user_id")
+    if not user_id:
+        return jsonify({"error": "user_id is required"}), 400
     applications = Application.query.filter_by(user_id=user_id).all()
     return jsonify([
         {
@@ -332,7 +364,6 @@ def applications_load():
         }
         for a in applications
     ])
-
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -164,3 +164,61 @@ def scrape_by_selectors(soup, platform):
         if element:
             return element.get_text(strip=True)[:2000]
     return None
+
+
+def scrape_description(url):
+    try:
+        response = requests.get(url, timeout=10, headers={
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'
+        })
+ 
+        if response.status_code != 200:
+            return None
+ 
+        soup = BeautifulSoup(response.text, 'html.parser')
+ 
+        for tag in soup(['script', 'style', 'nav', 'header', 'footer']):
+            tag.decompose()
+ 
+        description = extract_json_ld(soup)
+        if description:
+            return description
+ 
+        platform = detect_platform(url)
+        description = scrape_by_selectors(soup, platform)
+        if description:
+            return description
+ 
+       
+        return soup.get_text(strip=True)[:2000]
+ 
+    except requests.exceptions.Timeout:
+        print(f"Timeout scraping {url}")
+        return None
+    except Exception as e:
+        print(f"Failed to scrape {url}: {e}")
+        return None
+ 
+ 
+def enrich_with_description(internships):
+    for internship in internships:
+        links = internship.get('application_links', [])
+ 
+        if not links:
+           
+            internship['description'] = f"{internship['role']} at {internship['company']}"
+            continue
+ 
+       
+        best_link = get_best_link(links)
+ 
+        if best_link:
+            description = scrape_description(best_link)
+            if description:
+                internship['description'] = description
+            else:
+                internship['description'] = f"{internship['role']} at {internship['company']}"
+        else:
+            internship['description'] = f"{internship['role']} at {internship['company']}"
+ 
+    return internships

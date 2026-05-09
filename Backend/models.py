@@ -43,6 +43,7 @@ class Internship(db.Model):
     application_links = db.Column(db.Text)
     age = db.Column(db.String)
     season = db.Column(db.String)
+    description = db.Column(db.Text)  
     last_updated = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
@@ -52,5 +53,6 @@ class Internship(db.Model):
             "location": self.location,
             "terms": self.terms,
             "application_links": json.loads(self.application_links) if self.application_links else [],
-            "age": self.age
+            "age": self.age,
+            "description": self.description or ""  
         }

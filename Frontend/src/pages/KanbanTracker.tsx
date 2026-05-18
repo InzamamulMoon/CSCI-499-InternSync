@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   DndContext,
   DragOverlay,
@@ -20,6 +19,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import AppNav from "../components/AppNav";
 import type { InternshipMatch } from "../types";
 import {
   type ColumnId,
@@ -34,6 +34,13 @@ import {
   parseDroppableColumnId,
   persistKanbanBoard,
 } from "../lib/kanbanStorage";
+
+const COLUMN_BG: Record<ColumnId, string> = {
+  toApply: "bg-blue-50 border-blue-100",
+  applied: "bg-amber-50 border-amber-100",
+  interviewing: "bg-violet-50 border-violet-100",
+  offer: "bg-emerald-50 border-emerald-100",
+};
 
 function SortableKanbanCard({
   entry,
@@ -65,14 +72,14 @@ function SortableKanbanCard({
       style={style}
       {...attributes}
       {...listeners}
-      className="touch-none rounded border border-gray-200 bg-white p-2 text-left shadow-sm"
+      className="touch-none rounded-lg border border-cf-border bg-cf-surface p-2 text-left shadow-sm"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold text-gray-900">{m.company}</div>
-          <div className="text-xs text-gray-600">{m.role}</div>
+          <div className="text-sm font-semibold text-cf-text">{m.company}</div>
+          <div className="text-xs text-cf-muted">{m.role}</div>
           {m.location ? (
-            <div className="mt-0.5 text-[10px] text-gray-500">{m.location}</div>
+            <div className="mt-0.5 text-[10px] text-slate-500">{m.location}</div>
           ) : null}
         </div>
         <button
@@ -106,9 +113,9 @@ function KanbanColumn({
   return (
     <div
       ref={setNodeRef}
-      className="flex w-72 shrink-0 flex-col rounded-lg bg-gray-100 p-3"
+      className={`flex w-72 shrink-0 flex-col rounded-xl border p-3 ${COLUMN_BG[col]}`}
     >
-      <h2 className="mb-2 border-b border-gray-300 pb-2 text-sm font-bold text-gray-800">
+      <h2 className="mb-2 border-b border-blue-200 pb-2 text-sm font-bold text-slate-800">
         {COLUMN_TITLE[col]}
       </h2>
       <SortableContext
@@ -117,7 +124,7 @@ function KanbanColumn({
       >
         <div className="flex min-h-[8rem] flex-col gap-2">
           {entries.length === 0 ? (
-            <p className="text-xs text-gray-500">Drop cards here</p>
+            <p className="text-xs text-cf-muted">Drop cards here</p>
           ) : (
             entries.map((entry) => (
               <SortableKanbanCard
@@ -135,9 +142,9 @@ function KanbanColumn({
 
 function overlayCard(m: InternshipMatch) {
   return (
-    <div className="rounded border border-gray-300 bg-white p-2 shadow-lg">
-      <div className="text-sm font-semibold text-gray-900">{m.company}</div>
-      <div className="text-xs text-gray-600">{m.role}</div>
+    <div className="rounded-lg border border-cf-border bg-cf-surface p-2 shadow-lg ring-2 ring-cf-primary/30">
+      <div className="text-sm font-semibold text-cf-text">{m.company}</div>
+      <div className="text-xs text-cf-muted">{m.role}</div>
     </div>
   );
 }
@@ -248,24 +255,15 @@ export default function KanbanTracker() {
   }
 
   return (
-    <div className="min-h-screen bg-white p-4">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Application pipeline</h1>
-          <p className="text-sm text-gray-600">
-            Drag cards between columns, or delete a card. Saved to the database.
-          </p>
-        </div>
-        <Link
-          to="/"
-          className="text-sm font-medium text-blue-700 underline hover:text-blue-900"
-        >
-          ← Back to matches
-        </Link>
-      </div>
+    <div className="cf-page">
+      <AppNav
+        title="Application pipeline"
+        subtitle="Drag cards between columns, or delete a card. Saved to the database."
+      />
 
+      <main className="p-4">
       {boardLoading ? (
-        <p className="text-sm text-gray-600">Loading your pipeline…</p>
+        <p className="text-sm text-cf-muted">Loading your pipeline…</p>
       ) : (
         <DndContext
           sensors={sensors}
@@ -289,6 +287,7 @@ export default function KanbanTracker() {
           </DragOverlay>
         </DndContext>
       )}
+      </main>
     </div>
   );
 }

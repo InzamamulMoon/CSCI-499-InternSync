@@ -1,5 +1,6 @@
 import { useState, useEffect, startTransition } from "react";
 import { Link, useLocation } from "react-router-dom";
+import AppNav from "../components/AppNav";
 import type { InternshipMatch } from "../types";
 import { fetchMatches, loadProfileFromApi } from "../lib/api";
 import {
@@ -9,18 +10,18 @@ import {
 import { addMatchToToApply } from "../lib/kanbanStorage";
 
 function scoreColor(score: number) {
-  if (score > 80) return "bg-green-200 text-green-900";
-  if (score >= 50) return "bg-yellow-200 text-yellow-900";
-  return "bg-gray-300 text-gray-800";
+  if (score > 80) return "bg-emerald-100 text-emerald-900 ring-1 ring-emerald-200";
+  if (score >= 50) return "bg-cf-highlight text-amber-900 ring-1 ring-amber-200";
+  return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
 }
 
 function MatchCardSkeleton() {
   return (
-    <div className="flex animate-pulse flex-col rounded-lg border border-gray-200 bg-white p-4 shadow">
-      <div className="mb-3 h-5 w-2/3 rounded bg-gray-200" />
-      <div className="mb-2 h-4 w-1/2 rounded bg-gray-200" />
-      <div className="mb-4 h-16 rounded bg-gray-100" />
-      <div className="mt-auto h-8 rounded bg-gray-200" />
+    <div className="cf-card flex animate-pulse flex-col p-4">
+      <div className="mb-3 h-5 w-2/3 rounded bg-slate-200" />
+      <div className="mb-2 h-4 w-1/2 rounded bg-slate-200" />
+      <div className="mb-4 h-16 rounded bg-slate-100" />
+      <div className="mt-auto h-8 rounded bg-slate-200" />
     </div>
   );
 }
@@ -117,37 +118,16 @@ export default function Dashboard() {
   }, [location.key]);
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="border-b border-gray-200 bg-white p-4">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold text-blue-700">InternSync</div>
-            <h1 className="text-xl font-bold text-gray-900">Match dashboard</h1>
-            <p className="text-sm text-gray-600">
-              Live matches from your saved profile + backend /match
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              to="/tracker"
-              className="rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 hover:bg-gray-50"
-            >
-              Tracker
-            </Link>
-            <Link
-              to="/profile"
-              className="rounded bg-gray-900 px-3 py-2 text-sm text-white hover:bg-gray-800"
-            >
-              Edit profile
-            </Link>
-          </div>
-        </div>
-      </header>
+    <div className="cf-page">
+      <AppNav
+        title="Match dashboard"
+        subtitle="Live matches from your saved profile + backend /match"
+      />
 
       <main className="mx-auto max-w-5xl p-4">
         {loading && (
           <>
-            <p className="mb-4 rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+            <p className="cf-alert-info mb-4">
               Loading profile and analyzing matches…
             </p>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -159,7 +139,7 @@ export default function Dashboard() {
         )}
 
         {noProfile && !loading && (
-          <p className="mb-4 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <p className="cf-alert-warn mb-4">
             No saved profile yet.{" "}
             <Link to="/profile" className="font-medium underline">
               Open Profile
@@ -169,7 +149,7 @@ export default function Dashboard() {
         )}
 
         {needsTags && !loading && !noProfile && (
-          <p className="mb-4 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <p className="cf-alert-warn mb-4">
             Add at least one tag under{" "}
             <strong>Languages</strong>, <strong>Courses</strong>, or{" "}
             <strong>Interests</strong> so we can score listings.{" "}
@@ -180,7 +160,7 @@ export default function Dashboard() {
         )}
 
         {error && !loading && (
-          <p className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          <p className="cf-alert-error mb-4">
             {error} — is Flask running on{" "}
             <code className="rounded bg-red-100 px-1">127.0.0.1:5000</code> and
             PostgreSQL seeded?
@@ -188,9 +168,7 @@ export default function Dashboard() {
         )}
 
         {trackMessage && (
-          <p className="mb-4 rounded border border-green-200 bg-green-50 p-2 text-sm text-green-900">
-            {trackMessage}
-          </p>
+          <p className="cf-alert-success mb-4">{trackMessage}</p>
         )}
 
         {!loading && matches.length > 0 && (
@@ -198,41 +176,43 @@ export default function Dashboard() {
             {matches.map((match: InternshipMatch, index: number) => (
               <div
                 key={`${match.company}-${match.role}-${match.terms ?? ""}-${index}`}
-                className="flex flex-col rounded-lg border border-gray-200 bg-white p-4 shadow"
+                className="cf-card cf-card-accent flex flex-col p-4 transition-shadow hover:shadow-lg"
               >
                 <div className="mb-3 flex justify-between gap-2">
                   <div className="min-w-0">
-                    <h2 className="truncate text-lg font-bold text-gray-900">
+                    <h2 className="truncate text-lg font-bold text-cf-text">
                       {match.company}
                     </h2>
-                    <p className="text-sm font-medium text-blue-800">{match.role}</p>
+                    <p className="text-sm font-medium text-cf-primary">
+                      {match.role}
+                    </p>
                     {match.listing_tags && match.listing_tags.length > 0 ? (
                       <div
-                        className="mt-1.5 flex flex-wrap gap-1"
+                        className="mt-2 flex flex-wrap gap-1"
                         title="Skills or stacks mentioned in the listing"
                       >
                         {match.listing_tags.map((tag, ti) => (
                           <span
                             key={`${tag}-${ti}`}
-                            className="rounded-md bg-indigo-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-900 ring-1 ring-indigo-100"
+                            className="rounded-md bg-cf-highlight px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900"
                           >
                             {tag}
                           </span>
                         ))}
                       </div>
                     ) : null}
-                    <p className="mt-1.5 text-sm text-gray-600">{match.location}</p>
+                    <p className="mt-1.5 text-sm text-cf-muted">{match.location}</p>
                     {(match.terms || match.age) && (
-                      <p className="mt-1 text-xs text-gray-500">
+                      <p className="mt-1 text-xs text-slate-500">
                         {match.terms ? (
                           <span className="mr-3">
-                            <span className="font-semibold text-gray-600">Season:</span>{" "}
+                            <span className="font-semibold">Season:</span>{" "}
                             {match.terms}
                           </span>
                         ) : null}
                         {match.age ? (
                           <span>
-                            <span className="font-semibold text-gray-600">Posted:</span>{" "}
+                            <span className="font-semibold">Posted:</span>{" "}
                             {match.age}
                           </span>
                         ) : null}
@@ -241,22 +221,22 @@ export default function Dashboard() {
                   </div>
                   <div
                     className={
-                      "shrink-0 rounded px-2 py-1 text-sm font-bold " +
+                      "shrink-0 rounded-lg px-2 py-1 text-sm font-bold " +
                       scoreColor(match.score)
                     }
                   >
                     {match.score}%
                   </div>
                 </div>
-                <div className="mt-auto rounded bg-gray-50 p-3 text-sm text-gray-700">
-                  <div className="mb-1 text-xs font-semibold text-gray-500">
+                <div className="mt-auto rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
+                  <div className="mb-1 text-xs font-semibold text-cf-muted">
                     Why this matched
                   </div>
                   {match.explanation.suggestion}
                 </div>
                 {match.application_links && match.application_links.length > 0 ? (
-                  <div className="mt-3 border-t border-gray-100 pt-3">
-                    <div className="mb-1.5 text-xs font-semibold text-gray-500">
+                  <div className="mt-3 border-t border-cf-border pt-3">
+                    <div className="mb-1.5 text-xs font-semibold text-cf-muted">
                       Apply
                     </div>
                     <ul className="flex flex-col gap-1">
@@ -266,7 +246,7 @@ export default function Dashboard() {
                             href={url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="block truncate text-xs font-medium text-blue-700 underline hover:text-blue-900"
+                            className="cf-link block truncate text-xs"
                           >
                             {url.replace(/^https?:\/\//, "").slice(0, 48)}
                             {url.length > 56 ? "…" : ""}
@@ -276,11 +256,11 @@ export default function Dashboard() {
                     </ul>
                   </div>
                 ) : null}
-                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
+                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-cf-border pt-3">
                   <button
                     type="button"
                     disabled={tracking}
-                    className="rounded bg-gray-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-60"
+                    className="cf-btn-accent"
                     onClick={() => {
                       setTracking(true);
                       void addMatchToToApply(match)
@@ -297,10 +277,7 @@ export default function Dashboard() {
                   >
                     Track application
                   </button>
-                  <Link
-                    to="/tracker"
-                    className="text-xs font-medium text-blue-700 underline hover:text-blue-900"
-                  >
+                  <Link to="/tracker" className="cf-link text-xs">
                     Open tracker
                   </Link>
                 </div>

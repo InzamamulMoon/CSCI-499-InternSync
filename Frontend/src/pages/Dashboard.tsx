@@ -121,7 +121,7 @@ export default function Dashboard() {
     <div className="cf-page">
       <AppNav
         title="Match dashboard"
-        subtitle="Live matches from your saved profile + backend /match"
+        subtitle="Matches based on your saved profile"
       />
 
       <main className="mx-auto max-w-5xl p-4">

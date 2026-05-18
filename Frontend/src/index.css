@@ -17,19 +17,24 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: linear-gradient(165deg, #dbeafe 0%, #ecfdf5 50%, #fef9c3 100%);
-  background-attachment: fixed;
+  background: #e8f4fc;
   color: #0f172a;
 }
 
 .cf-page {
   min-height: 100vh;
+  background: #e8f4fc;
 }
 
 .cf-header {
-  background: linear-gradient(90deg, #2563eb 0%, #059669 100%);
+  background: #2563eb;
   color: #fff;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+
+.cf-signin-side {
+  background: #2563eb;
+  color: #fff;
 }
 
 .cf-card {

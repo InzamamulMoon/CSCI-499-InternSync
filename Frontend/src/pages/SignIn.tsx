@@ -22,7 +22,7 @@ export default function SignIn() {
 
   return (
     <div className="cf-page flex min-h-screen flex-col md:flex-row">
-      <div className="flex flex-col justify-center bg-gradient-to-br from-blue-600 to-emerald-600 p-8 text-white md:w-2/5">
+      <div className="cf-signin-side flex flex-col justify-center p-8 md:w-2/5">
         <p className="text-sm font-bold uppercase tracking-widest text-blue-100">
           InternSync
         </p>

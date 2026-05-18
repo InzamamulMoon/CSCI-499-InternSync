@@ -42,15 +42,19 @@ def get_internships(season):
 
 def fetch_and_parse_readme(url, season_name):
     try:
+         # Attempt to fetch the README file from GitHub with a 10-second deadline
         response = requests.get(url, timeout=10)
     except requests.exceptions.Timeout:
+        # Handle cases where the server takes too long to respond, returning a timeout error 
         print(f"Timeout fetching {season_name} README")
         return {}
     except requests.exceptions.RequestException as e:
+         # Catches any other network-related errors
         print(f"Error fetching {season_name} README: {e}")
         return {}
-    
+     
     if response.status_code != 200:
+        # Checks if the server responded, but returns an error if the status code is not 200 
         print(f"Error: Could not fetch {season_name} README (status {response.status_code})")
         return {}
     

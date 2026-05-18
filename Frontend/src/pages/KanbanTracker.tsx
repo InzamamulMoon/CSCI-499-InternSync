@@ -33,7 +33,14 @@ import {
   parseDroppableColumnId,
   saveKanbanBoard,
 } from "../lib/kanbanStorage";
-function SortableKanbanCard({ entry }: { entry: KanbanEntry }) {
+
+function SortableKanbanCard({
+  entry,
+  onRemove,
+}: {
+  entry: KanbanEntry;
+  onRemove: (id: string) => void;
+}) {
   const {
     attributes,
     listeners,
@@ -57,13 +64,29 @@ function SortableKanbanCard({ entry }: { entry: KanbanEntry }) {
       style={style}
       {...attributes}
       {...listeners}
-      className="cursor-grab touch-none rounded border border-gray-200 bg-white p-2 text-left shadow-sm active:cursor-grabbing"
+      className="touch-none rounded border border-gray-200 bg-white p-2 text-left shadow-sm"
     >
-      <div className="text-sm font-semibold text-gray-900">{m.company}</div>
-      <div className="text-xs text-gray-600">{m.role}</div>
-      {m.location ? (
-        <div className="mt-0.5 text-[10px] text-gray-500">{m.location}</div>
-      ) : null}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-semibold text-gray-900">{m.company}</div>
+          <div className="text-xs text-gray-600">{m.role}</div>
+          {m.location ? (
+            <div className="mt-0.5 text-[10px] text-gray-500">{m.location}</div>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          className="shrink-0 rounded px-2 py-0.5 text-xs font-medium text-red-700 hover:bg-red-50"
+          aria-label="Remove from board"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove(entry.id);
+          }}
+        >
+          Delete
+        </button>
+      </div>
     </div>
   );
 }
@@ -71,9 +94,11 @@ function SortableKanbanCard({ entry }: { entry: KanbanEntry }) {
 function KanbanColumn({
   col,
   entries,
+  onRemoveEntry,
 }: {
   col: ColumnId;
   entries: KanbanEntry[];
+  onRemoveEntry: (id: string) => void;
 }) {
   const { setNodeRef } = useDroppable({ id: droppableColumnId(col) });
 
@@ -94,7 +119,11 @@ function KanbanColumn({
             <p className="text-xs text-gray-500">Drop cards here</p>
           ) : (
             entries.map((entry) => (
-              <SortableKanbanCard key={entry.id} entry={entry} />
+              <SortableKanbanCard
+                key={entry.id}
+                entry={entry}
+                onRemove={onRemoveEntry}
+              />
             ))
           )}
         </div>
@@ -194,13 +223,24 @@ export default function KanbanTracker() {
     setActiveId(null);
   }
 
+  function handleRemoveEntry(entryId: string) {
+    setBoard((prev) => {
+      const col = findColumnForEntryId(prev, entryId);
+      if (!col) return prev;
+      return {
+        ...prev,
+        [col]: prev[col].filter((e) => e.id !== entryId),
+      };
+    });
+  }
+
   return (
     <div className="min-h-screen bg-white p-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Application pipeline</h1>
           <p className="text-sm text-gray-600">
-            Drag cards between columns. State is saved in this browser.
+            Drag cards between columns, or delete a card. Saved in this browser.
           </p>
         </div>
         <Link
@@ -220,7 +260,12 @@ export default function KanbanTracker() {
       >
         <div className="flex gap-4 overflow-x-auto pb-2">
           {COLUMN_ORDER.map((col) => (
-            <KanbanColumn key={col} col={col} entries={board[col]} />
+            <KanbanColumn
+              key={col}
+              col={col}
+              entries={board[col]}
+              onRemoveEntry={handleRemoveEntry}
+            />
           ))}
         </div>
         <DragOverlay>

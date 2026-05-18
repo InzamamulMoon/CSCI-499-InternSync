@@ -22,17 +22,21 @@ function mergeUnique(existing: string[], incoming: string[]) {
 }
 
 export default function Profile() {
-  const [profile, setProfile] = useLocalStorage<UserProfile>(
+
+  //call setProfile to update the profile
+  const [profile, setProfile] = useLocalStorage<UserProfile>( // key for localStorage
     USER_PROFILE_STORAGE_KEY,
-    emptyUserProfile,
-    parseUserProfile,
+    emptyUserProfile, //see if user created profile before, create empty one
+    parseUserProfile, 
   );
 
+  //inputs for the tag fields
   const [langInput, setLangInput] = useState("");
   const [courseInput, setCourseInput] = useState("");
   const [interestInput, setInterestInput] = useState("");
   const [saveNotice, setSaveNotice] = useState<"ok" | "err" | null>(null);
 
+  //helper to add tags from input field to profile
   function addTags(
     raw: string,
     field: "languages" | "courses" | "interests",
@@ -50,6 +54,7 @@ export default function Profile() {
     setInput("");
   }
 
+  //handle key events for tag input fields 
   function onTagKeyDown(
     e: KeyboardEvent<HTMLInputElement>,
     raw: string,
@@ -69,6 +74,7 @@ export default function Profile() {
     }
   }
 
+  //save profile + show notice on success or error
   function handleSave() {
     setSaveNotice(null);
     const toSave: UserProfile = {

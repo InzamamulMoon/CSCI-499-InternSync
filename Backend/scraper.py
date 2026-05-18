@@ -4,6 +4,8 @@ from bs4 import BeautifulSoup
 
 
 def get_best_link(links):
+    #Skips Simplify redirect links and returns the best direct application link
+    #Attempts to extract job description from JSON-LD structured data
     for link in links:
         if 'simplify.jobs' not in link:
             return link
@@ -11,6 +13,8 @@ def get_best_link(links):
 
 
 def extract_json_ld(soup):
+    #Most career pages embed JobPosting schema for Google Jobs indexing
+    #Allowing us to get clean descriptions without scraping HTML.
     for script in soup.find_all('script', {'type': 'application/ld+json'}):
         try:
             data = json.loads(script.string)
@@ -29,6 +33,8 @@ def extract_json_ld(soup):
 
 
 def detect_platform(url):
+    #Identifies which ATS  platform a URL belongs to.
+    # gh_jid= means Greenhouse even on custom domains like careers.airbnb.com     
     if 'gh_jid=' in url or 'greenhouse.io' in url:
         return 'greenhouse'
     elif 'myworkdayjobs.com' in url or 'myworkdaysite.com' in url:
@@ -69,6 +75,8 @@ def detect_platform(url):
 
 
 PLATFORM_SELECTORS = {
+    # Platform-specific CSS selectors used as a fallback when JSON-LD is unavailable.
+     # Each platform has known HTML patterns for where they render the job description.
     'workday': [
         {'data-automation-id': 'jobPostingDescription'},
         {'class': 'css-rdyjdf'},
@@ -158,6 +166,8 @@ PLATFORM_SELECTORS = {
 
 
 def scrape_by_selectors(soup, platform):
+    #Fallback scraping using platform-specific CSS selectors.
+    #Called only when JSON-LD structured data is not available.
     selectors = PLATFORM_SELECTORS.get(platform, PLATFORM_SELECTORS['generic'])
     for selector in selectors:
         element = soup.find('div', selector)
@@ -167,6 +177,9 @@ def scrape_by_selectors(soup, platform):
 
 
 def scrape_description(url):
+    # Add a description field to every internship
+    # Falls back to "role at company" if no links or scraping fails
+    # So every internship should have a description 
     try:
         response = requests.get(url, timeout=10, headers={
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'

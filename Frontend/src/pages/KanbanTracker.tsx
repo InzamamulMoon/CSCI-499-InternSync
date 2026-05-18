@@ -36,7 +36,7 @@ import {
 } from "../lib/kanbanStorage";
 
 const COLUMN_BG: Record<ColumnId, string> = {
-  toApply: "bg-blue-50 border-blue-100",
+  toApply: "bg-blue-100 border-blue-200",
   applied: "bg-amber-50 border-amber-100",
   interviewing: "bg-violet-50 border-violet-100",
   offer: "bg-emerald-50 border-emerald-100",

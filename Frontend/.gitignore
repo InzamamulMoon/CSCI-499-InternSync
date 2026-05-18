@@ -23,5 +23,4 @@ dist-ssr
 *.sln
 *.sw?
 
-# Local-only Kanban drag-handle reference (see KanbanTracker.dragHandle.reference.ts)
 src/pages/KanbanTracker.dragHandle.reference.ts

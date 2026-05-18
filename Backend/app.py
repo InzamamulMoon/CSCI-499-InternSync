@@ -174,16 +174,19 @@ def fetch_and_parse_readme(url, season_name):
 
 @app.route('/')
 def hello():
+    
     summer_data = get_internships("summer")
     offseason_data = get_internships("offseason")
-
+    
+   #Gets the total count of each internship per category and then overall for metadata
     summer_total = len(summer_data)
     offseason_total = len(offseason_data)
     total = summer_total + offseason_total
 
     if total == 0:
         return jsonify({"error": "No internships found"}), 500
-
+    
+    # Return a structured JSON  containing the internship data alongside metadata 
     return jsonify({
         'summer_2026': summer_data,
         'off_season': offseason_data,

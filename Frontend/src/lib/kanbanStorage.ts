@@ -31,7 +31,7 @@ function isColumnId(x: string): x is ColumnId {
   return COLUMN_ORDER.includes(x as ColumnId);
 }
 
-function parseBoard(raw: unknown): KanbanBoard {
+export function parseBoard(raw: unknown): KanbanBoard {
   if (!raw || typeof raw !== "object") return emptyKanbanBoard();
   const o = raw as Record<string, unknown>;
   const out = emptyKanbanBoard();
@@ -70,6 +70,25 @@ export function saveKanbanBoard(board: KanbanBoard): void {
   }
 }
 
+export async function persistKanbanBoard(board: KanbanBoard): Promise<void> {
+  saveKanbanBoard(board);
+  try {
+    const { saveKanbanToApi } = await import("./api");
+    await saveKanbanToApi(board);
+  } catch {
+    /* fallback */
+  }
+}
+
+export async function fetchKanbanBoard(): Promise<KanbanBoard> {
+  try {
+    const { loadKanbanFromApi } = await import("./api");
+    return await loadKanbanFromApi();
+  } catch {
+    return loadKanbanBoard();
+  }
+}
+
 export function matchFingerprint(m: InternshipMatch): string {
   return `${m.company}|||${m.role}|||${m.location}`;
 }
@@ -85,8 +104,8 @@ export function findColumnForEntryId(
 }
 
 /** Append to To Apply if that listing is not already in To Apply. */
-export function addMatchToToApply(match: InternshipMatch): boolean {
-  const board = loadKanbanBoard();
+export async function addMatchToToApply(match: InternshipMatch): Promise<boolean> {
+  const board = await fetchKanbanBoard();
   const fp = matchFingerprint(match);
   const dup = board.toApply.some((e) => matchFingerprint(e.match) === fp);
   if (dup) return false;
@@ -94,7 +113,7 @@ export function addMatchToToApply(match: InternshipMatch): boolean {
     id: crypto.randomUUID(),
     match: { ...match },
   });
-  saveKanbanBoard(board);
+  await persistKanbanBoard(board);
   return true;
 }
 

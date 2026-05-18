@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   DndContext,
@@ -29,9 +29,10 @@ import {
   COLUMN_TITLE,
   droppableColumnId,
   findColumnForEntryId,
-  loadKanbanBoard,
+  emptyKanbanBoard,
+  fetchKanbanBoard,
   parseDroppableColumnId,
-  saveKanbanBoard,
+  persistKanbanBoard,
 } from "../lib/kanbanStorage";
 
 function SortableKanbanCard({
@@ -142,8 +143,10 @@ function overlayCard(m: InternshipMatch) {
 }
 
 export default function KanbanTracker() {
-  const [board, setBoard] = useState<KanbanBoard>(() => loadKanbanBoard());
+  const [board, setBoard] = useState<KanbanBoard>(emptyKanbanBoard);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [boardLoading, setBoardLoading] = useState(true);
+  const skipPersist = useRef(true);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -151,7 +154,17 @@ export default function KanbanTracker() {
   );
 
   useEffect(() => {
-    saveKanbanBoard(board);
+    fetchKanbanBoard()
+      .then(setBoard)
+      .finally(() => {
+        skipPersist.current = false;
+        setBoardLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (skipPersist.current) return;
+    void persistKanbanBoard(board);
   }, [board]);
 
   const activeEntry = activeId
@@ -240,7 +253,7 @@ export default function KanbanTracker() {
         <div>
           <h1 className="text-xl font-bold text-gray-900">Application pipeline</h1>
           <p className="text-sm text-gray-600">
-            Drag cards between columns, or delete a card. Saved in this browser.
+            Drag cards between columns, or delete a card. Saved to the database.
           </p>
         </div>
         <Link
@@ -251,27 +264,31 @@ export default function KanbanTracker() {
         </Link>
       </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onDragCancel={handleDragCancel}
-      >
-        <div className="flex gap-4 overflow-x-auto pb-2">
-          {COLUMN_ORDER.map((col) => (
-            <KanbanColumn
-              key={col}
-              col={col}
-              entries={board[col]}
-              onRemoveEntry={handleRemoveEntry}
-            />
-          ))}
-        </div>
-        <DragOverlay>
-          {activeEntry ? overlayCard(activeEntry.match) : null}
-        </DragOverlay>
-      </DndContext>
+      {boardLoading ? (
+        <p className="text-sm text-gray-600">Loading your pipeline…</p>
+      ) : (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
+        >
+          <div className="flex gap-4 overflow-x-auto pb-2">
+            {COLUMN_ORDER.map((col) => (
+              <KanbanColumn
+                key={col}
+                col={col}
+                entries={board[col]}
+                onRemoveEntry={handleRemoveEntry}
+              />
+            ))}
+          </div>
+          <DragOverlay>
+            {activeEntry ? overlayCard(activeEntry.match) : null}
+          </DragOverlay>
+        </DndContext>
+      )}
     </div>
   );
 }

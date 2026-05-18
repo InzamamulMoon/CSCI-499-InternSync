@@ -1,12 +1,8 @@
-import { type KeyboardEvent, useState } from "react";
+import { type KeyboardEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { UserProfile } from "../types";
-import { useLocalStorage } from "../hooks/useLocalStorage";
-import {
-  emptyUserProfile,
-  parseUserProfile,
-  USER_PROFILE_STORAGE_KEY,
-} from "../lib/profileStorage";
+import { loadProfileFromApi, saveProfileToApi } from "../lib/api";
+import { emptyUserProfile } from "../lib/profileStorage";
 
 function mergeUnique(existing: string[], incoming: string[]) {
   const seen = new Set(existing.map((t) => t.toLowerCase()));
@@ -22,21 +18,31 @@ function mergeUnique(existing: string[], incoming: string[]) {
 }
 
 export default function Profile() {
-
-  //call setProfile to update the profile
-  const [profile, setProfile] = useLocalStorage<UserProfile>( // key for localStorage
-    USER_PROFILE_STORAGE_KEY,
-    emptyUserProfile, //see if user created profile before, create empty one
-    parseUserProfile, 
-  );
-
-  //inputs for the tag fields
+  const [profile, setProfile] = useState<UserProfile>(emptyUserProfile);
   const [langInput, setLangInput] = useState("");
   const [courseInput, setCourseInput] = useState("");
   const [interestInput, setInterestInput] = useState("");
   const [saveNotice, setSaveNotice] = useState<"ok" | "err" | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  //helper to add tags from input field to profile
+  useEffect(() => {
+    loadProfileFromApi()
+      .then((p) => {
+        if (p) {
+          const { kanban_board: _k, ...rest } = p;
+          setProfile(rest);
+        }
+      })
+      .catch((err: unknown) => {
+        setLoadError(
+          err instanceof Error ? err.message : "Could not load profile",
+        );
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
   function addTags(
     raw: string,
     field: "languages" | "courses" | "interests",
@@ -54,7 +60,6 @@ export default function Profile() {
     setInput("");
   }
 
-  //handle key events for tag input fields 
   function onTagKeyDown(
     e: KeyboardEvent<HTMLInputElement>,
     raw: string,
@@ -74,8 +79,7 @@ export default function Profile() {
     }
   }
 
-  //save profile + show notice on success or error
-  function handleSave() {
+  async function handleSave() {
     setSaveNotice(null);
     const toSave: UserProfile = {
       languages: profile.languages,
@@ -83,15 +87,27 @@ export default function Profile() {
       interests: profile.interests,
       unique_background: profile.unique_background.trim(),
     };
+    setSaving(true);
     try {
+      await saveProfileToApi(toSave);
       setProfile(toSave);
       setSaveNotice("ok");
     } catch {
       setSaveNotice("err");
+    } finally {
+      setSaving(false);
     }
   }
 
   const { languages, courses, interests, unique_background } = profile;
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
+        <p className="text-sm text-gray-600">Loading profile from server…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-4">
@@ -108,6 +124,12 @@ export default function Profile() {
             ← Back to matches
           </Link>
         </div>
+
+        {loadError && (
+          <p className="mb-4 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            {loadError} — is the backend running? See Backend/DEMO_SETUP.md
+          </p>
+        )}
 
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow">
           <div className="mb-6">
@@ -260,10 +282,11 @@ export default function Profile() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={handleSave}
-              className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              onClick={() => void handleSave()}
+              disabled={saving}
+              className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
             >
-              Save profile
+              {saving ? "Saving…" : "Save profile"}
             </button>
             <Link
               to="/"
@@ -275,15 +298,14 @@ export default function Profile() {
 
           {saveNotice === "ok" && (
             <p className="mt-3 rounded border border-green-200 bg-green-50 p-2 text-sm text-green-900">
-              Profile saved in this browser (localStorage). Click{" "}
-              <strong>View your matches</strong> to load or refresh listings on
-              the home page (the matcher needs at least one language, course, or
-              interest tag).
+              Profile saved to the database. Click <strong>View your matches</strong>{" "}
+              to refresh listings (needs at least one language, course, or interest
+              tag).
             </p>
           )}
           {saveNotice === "err" && (
             <p className="mt-3 rounded border border-red-200 bg-red-50 p-2 text-sm text-red-800">
-              Could not save to storage (private mode or quota).
+              Could not save profile. Check that PostgreSQL and Flask are running.
             </p>
           )}
         </div>

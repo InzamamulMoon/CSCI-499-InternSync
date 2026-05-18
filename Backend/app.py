@@ -313,11 +313,15 @@ def profile_save():
         return jsonify({"error": "user_id is required"}), 400
     user_id = data.get("user_id")
     profile = UserProfile.query.filter_by(user_id=user_id).first()
+    kanban = data.get("kanban_board")
+    kanban_json = json.dumps(kanban) if kanban is not None else None
     if profile:
         profile.languages = json.dumps(data.get("languages", []))
         profile.courses = json.dumps(data.get("courses", []))
         profile.interests = json.dumps(data.get("interests", []))
         profile.unique_background = data.get("unique_background")
+        if kanban_json is not None:
+            profile.kanban_board = kanban_json
     else:
         profile = UserProfile(
             user_id=user_id,
@@ -325,6 +329,7 @@ def profile_save():
             courses=json.dumps(data.get("courses", [])),
             interests=json.dumps(data.get("interests", [])),
             unique_background=data.get("unique_background"),
+            kanban_board=kanban_json,
         )
         db.session.add(profile)
     db.session.commit()
@@ -339,12 +344,19 @@ def profile_load():
     profile = UserProfile.query.filter_by(user_id=user_id).first()
     if not profile:
         return jsonify({"error": "Profile not found"}), 404
+    kanban_board = None
+    if profile.kanban_board:
+        try:
+            kanban_board = json.loads(profile.kanban_board)
+        except json.JSONDecodeError:
+            kanban_board = None
     return jsonify({
         "user_id": profile.user_id,
         "languages": json.loads(profile.languages) if profile.languages else [],
         "courses": json.loads(profile.courses) if profile.courses else [],
         "interests": json.loads(profile.interests) if profile.interests else [],
         "unique_background": profile.unique_background,
+        "kanban_board": kanban_board,
     })
 
 

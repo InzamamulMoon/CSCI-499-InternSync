@@ -19,6 +19,7 @@ class UserProfile(db.Model):
     courses = db.Column(db.Text)
     interests = db.Column(db.Text)
     unique_background = db.Column(db.Text, nullable=True)
+    kanban_board = db.Column(db.Text, nullable=True)
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     user = db.relationship("User", back_populates="profile")
 
